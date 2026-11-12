@@ -1,105 +1,100 @@
 # Deployment and operator guide
 
-This document is for the project owner or infrastructure operator. **Recruiters and application visitors do not need Linux, Docker, Python, Ollama or an API key on their own devices.** Those components run on the host server.
+This guide is for the project owner. **Recruiters and visitors only need a browser. They do not install Python, Docker, Linux, Ollama or an API key.**
 
-## Current deployment status
+## Recommended free deployment
 
-The repository has not yet been verified as a complete, runnable deployment. Confirm that the application package under `src/doc_assistant/`, tests and sample data are present before deploying. Do not advertise a live demo until the full flow has been tested through a public HTTPS URL.
+Use Streamlit Community Cloud for the public app and the Gemini API free tier for answer generation. The hosted app does not start an Ollama server.
 
-## Requirements
+### 1. Create a Gemini API key
 
-For a small portfolio deployment using the default `llama3.2:3b` model, start with a Linux VM/VPS with:
+1. Open [Google AI Studio](https://aistudio.google.com/apikey).
+2. Create an API key in a project that is on the Gemini API Free Tier.
+3. Keep the key private. Do not paste it into GitHub, source files, screenshots or public messages.
 
-- 4 vCPU as a starting point
-- 8 GB RAM minimum; 16 GB preferred
-- 30–50 GB SSD for containers, model files and persistent app data
-- Docker Engine and Docker Compose plugin
-- A domain and HTTPS reverse proxy for public access
+Gemini free-tier models and quotas vary. Check the active limits in AI Studio and the [official pricing page](https://ai.google.dev/gemini-api/docs/pricing). If a request hits a quota or service error, DocuMind falls back to showing retrieved passages.
 
-These are starting estimates, not performance guarantees. Actual memory and latency depend on concurrent users, model settings and document size.
+### 2. Deploy the GitHub repository
 
-## Deploy with Docker Compose
+1. Open [Streamlit Community Cloud](https://share.streamlit.io/).
+2. Sign in with GitHub and authorize access to the public repository.
+3. Select **Create app**.
+4. Choose repository: `shriramchemical2000-hub/doc-assistant`.
+5. Choose branch: `main`.
+6. Set the app file path to: `app.py`.
+7. Open **Advanced settings** and choose Python 3.11 if available.
+8. In the **Secrets** field, add the following TOML (replace the placeholder locally in the Streamlit settings; do not commit it):
 
-1. Provision a Linux VM and install Docker Engine plus the Compose plugin.
-2. Clone the repository:
-
-   ```bash
-   git clone https://github.com/shriramchemical2000-hub/doc-assistant.git
-   cd doc-assistant
+   ```toml
+   GEMINI_API_KEY = "PASTE_YOUR_PRIVATE_KEY_HERE"
+   GEMINI_MODEL = "gemini-3.8-flash"
+   OLLAMA_ENABLED = "false"
    ```
 
-3. Confirm the expected application files and folders exist. In particular, the imports in `app.py` require the `src/doc_assistant/` package.
-4. Create the environment file:
+9. Click **Deploy** and wait for the build to finish.
+10. Open the generated `*.streamlit.app` URL and test the complete upload → index → ask → source evidence flow.
+
+Official instructions: [Deploy a Streamlit app](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy) and [manage secrets](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management).
+
+### 3. Important free-hosting constraints
+
+- Community Cloud is free, but its CPU, memory and storage limits can change. The published limits are approximately 2.7 GB RAM maximum; monitor app health and logs.
+- Apps without traffic for 12 hours are hibernated. A visitor can wake the app, so the first visit after inactivity may take longer.
+- The embedding model is downloaded and loaded by the app. Initial startup can be slow and may approach the platform's memory limits.
+- Local app storage is not a durable database. Treat uploaded documents as temporary demo data.
+- Gemini free-tier requests have model-specific rate limits. They are not unlimited, and Google can change quotas or model availability.
+- Google states that free-tier Gemini API content may be used to improve its products. Use synthetic/public documents only; never upload confidential employer, customer or personal records.
+- This free setup is suitable for a portfolio demonstration, not a production service with uptime, privacy or throughput guarantees.
+
+### 4. Verify the public demo before sharing
+
+- App opens without asking the visitor to sign in.
+- Upload a PDF, DOCX and TXT file.
+- Confirm the 20 MB per-file application limit.
+- Ask a question whose answer exists in the sample document.
+- Confirm Gemini returns an answer with valid [S1], [S2] source references.
+- Ask a question not answered by the document and confirm the app does not invent an answer.
+- Confirm source passages and page metadata are visible.
+- Check app logs for memory, dependency or API quota errors.
+
+Only after these checks pass should the public URL be added to the README and shared with recruiters.
+
+## Local development with Ollama (optional)
+
+Ollama remains available for local development or a separately hosted Docker deployment. It is not required for the free Community Cloud app.
+
+1. Install Docker Desktop on Windows or Docker Engine and Compose on Linux.
+2. Clone the repository and enter its directory.
+3. Copy the example environment file:
 
    ```bash
    cp .env.example .env
    ```
 
-5. Review the model and storage settings. The default Compose setup connects the application to Ollama over the private Docker network.
-6. Start the stack:
+4. Start the stack:
 
    ```bash
-   docker compose up -d --build
-   ```
-
-7. Check service status and logs:
-
-   ```bash
-   docker compose ps
-   docker compose logs -f documind
-   docker compose logs -f ollama
-   ```
-
-8. Configure Caddy or Nginx to proxy HTTPS traffic to the Streamlit service on port 8501.
-9. Configure the firewall to expose only the required SSH and HTTPS ports. Do not expose Ollama's port 11434 to the public internet.
-10. Test document upload, retrieval, answer generation, citations, unsupported questions and concurrent browser sessions before sharing the URL.
-
-## Local test on Windows
-
-1. Install Docker Desktop and start its engine.
-2. Download or clone this repository.
-3. Open PowerShell in the repository directory.
-4. Create the environment file:
-
-   ```powershell
-   Copy-Item .env.example .env
-   ```
-
-5. Start the application:
-
-   ```powershell
    docker compose up --build
    ```
 
-6. Open http://localhost:8501 in a browser.
+5. Open http://localhost:8501.
 
-The first run downloads container images, the embedding model and the Ollama model. It requires an internet connection and several GB of disk space. Later runs reuse the Docker volumes.
-
-Stop the stack with:
-
-```powershell
-docker compose down
-```
+The Compose configuration explicitly enables Ollama and downloads the configured model. The first run needs an internet connection and several GB of disk space.
 
 ## Upload limit
 
-The Streamlit uploader is configured for a maximum of 20 MB per file. Reverse proxies and hosting platforms may have their own request-body limits; configure those consistently. A per-file application limit does not guarantee that every host accepts a 20 MB request.
+The Streamlit uploader is configured for a maximum of 20 MB per file. Hosting platforms may impose additional request-size limits, so verify the upload flow after deployment.
 
-## Secrets
+## Secret handling
 
-The primary Ollama configuration does not require a Gemini API key. If optional Gemini fallback is enabled, store its key in server-side environment variables or the host's secret manager. Never commit `.env`, API keys or credentials.
-
-## Persistence and privacy
-
-- Preserve the Docker volumes and the application's `data/` directory if data must survive container recreation.
-- Configure backups and retention according to the demo's intended use.
-- The current portfolio design is not a substitute for authentication, tenant isolation, encryption-at-rest or a production data-governance program.
-- Use synthetic or public documents only in a public demo.
+- Store the Gemini key only in Streamlit Community Cloud Secrets or a local untracked `.env` file.
+- Never commit API keys, `.env` or `.streamlit/secrets.toml`.
+- If a key is accidentally exposed, revoke it in Google AI Studio and create a replacement.
 
 ## Troubleshooting
 
-- **Application import error:** verify that `src/doc_assistant/` is present in the repository and included in the Docker build context.
-- **Ollama connection error:** inspect `docker compose logs ollama`; confirm the app uses `http://ollama:11434` from inside the Compose network.
-- **Model not found:** inspect the model-init container logs and verify the configured model name.
-- **Out of memory:** increase VM RAM or use a smaller/quantized model; review container memory limits.
-- **Upload rejected:** check Streamlit's 20 MB limit and the reverse proxy's request-body limit.
+- **App fails during startup:** inspect Streamlit Cloud logs for dependency or memory errors.
+- **Gemini quota error:** check the project's active free-tier limits in AI Studio; the app should show evidence-only output when generation is unavailable.
+- **No Gemini answer:** verify the secret names and model name; restart/redeploy after changing secrets.
+- **Memory/resource warning:** reboot the app, check logs and consider a lighter embedding implementation if the model exceeds the free host's limits.
+- **Upload rejected:** confirm file size is within 20 MB and check the platform's request-size limits.
