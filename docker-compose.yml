@@ -1,0 +1,49 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: documind-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    # Keep Ollama private to the Docker network; do not expose port 11434 publicly.
+
+  ollama-model-init:
+    image: ollama/ollama:latest
+    container_name: documind-model-init
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      'until ollama list >/dev/null 2>&1; do sleep 2; done;
+       ollama pull "$${OLLAMA_MODEL}"'
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: "no"
+
+  documind:
+    build: .
+    container_name: documind-app
+    restart: unless-stopped
+    depends_on:
+      ollama-model-init:
+        condition: service_completed_successfully
+    ports:
+      - "8501:8501"
+    environment:
+      OLLAMA_ENABLED: "true"
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+      DATABASE_PATH: data/assistant.db
+      UPLOAD_DIR: data/uploads
+      STREAMLIT_SERVER_MAX_UPLOAD_SIZE: "20"
+    volumes:
+      - ./data:/app/data
+      - model-cache:/root/.cache
+    mem_limit: 6g
+
+volumes:
+  ollama-models:
+  model-cache:
