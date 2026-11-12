@@ -1,170 +1,98 @@
-# DocuMind — Enterprise Document Intelligence Assistant
+# DocuMind — Enterprise Document Intelligence
 
-A browser-based Retrieval-Augmented Generation (RAG) application for asking questions across PDF, DOCX and TXT documents. The portfolio deployment uses **Ollama running on the application server**, so visitors need only a browser and do not need to install an LLM or provide an API key.
+> Ask questions about your documents and inspect the evidence behind every answer.
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![UI](https://img.shields.io/badge/UI-Streamlit-FF4B4B)
-![LLM](https://img.shields.io/badge/LLM-Ollama%20%7C%20Llama%203.2-purple)
-![RAG](https://img.shields.io/badge/Architecture-RAG-teal)
+**Live demo:** Not deployed yet. A public browser link will be added here after the application is deployed and tested.
 
-## Recruiter experience
+DocuMind is a Retrieval-Augmented Generation (RAG) application that helps users explore PDF, DOCX and TXT documents using natural-language questions. It retrieves relevant passages before generating an answer and displays the source evidence so users can verify the response.
 
-1. Open the deployed DocuMind URL in a browser.
+## Try the intended experience
+
+1. Open the hosted application in a browser.
 2. Upload a PDF, Word document or text file (up to **20 MB per file**).
-3. Ask a question in plain English.
-4. Read the response and inspect the source file, page number and retrieved evidence.
+3. Ask a question in natural language.
+4. Review the response and inspect the retrieved source passages and page references.
 
-No local Ollama installation, Python setup, or Gemini API key is required for visitors. Ollama and the model run on the host server.
+**Visitors do not install Python, Docker, Linux or Ollama.** In the hosted version, the application and Ollama model run on the server. The visitor only needs a modern web browser.
 
-## Why server-hosted Ollama?
+> The public demo is not live yet. The repository contains deployment configuration, but a working public URL must not be assumed until deployment and end-to-end testing are complete.
 
-A free third-party API can impose request and token quotas. DocuMind therefore prefers a self-hosted open model (`llama3.2:3b`) running in a dedicated Ollama Docker container. The app calls Ollama over a private Docker network. The Ollama port is not exposed publicly.
+## Highlights
 
-**Important trade-off:** the software and model can be used without a per-request Gemini API key, but hosting the server costs money and requires adequate RAM/CPU. A small 3B model is suitable for a portfolio demo, not a guarantee of enterprise-grade reasoning.
+- PDF, DOCX and TXT ingestion
+- 20 MB per-file upload limit
+- Text chunking with page and filename metadata
+- Local semantic embeddings using Sentence Transformers
+- Similarity-based retrieval of relevant passages
+- Ollama-hosted open-weight language model for answer generation
+- Evidence-only fallback when generation is unavailable
+- Source passage display to support answer verification
+- Streamlit browser interface
+- Docker Compose setup for the application and Ollama
 
-## Features
+## Product preview
 
-- PDF, DOCX and TXT document ingestion
-- 20 MB maximum per file
-- Page-aware chunking and citations
-- Local semantic embeddings (`all-MiniLM-L6-v2`)
-- SQLite-backed document/chunk store, isolated by browser session in the demo
-- Semantic retrieval with configurable top-k and similarity threshold
-- Ollama-first grounded answer generation
-- Optional Gemini fallback (not required)
-- Evidence-only fallback if model generation is unavailable or citations are invalid
-- Polished responsive Streamlit interface
-- Docker Compose deployment with automatic Ollama model pull
-- Pytest suite and GitHub Actions workflow
+The application provides a document workspace, upload controls, indexed-document list, question interface, answer panel and expandable source evidence. Add screenshots here after the UI has been run and captured:
 
-## Architecture
+| Workspace | Evidence-backed answer |
+|---|---|
+| *Screenshot to be added* | *Screenshot to be added* |
+
+## How it works
 
 ```mermaid
 flowchart TD
-  A[Recruiter browser] --> B[DocuMind Streamlit UI]
-  B --> C[Document parser: PDF / DOCX / TXT]
-  C --> D[Chunking + page metadata]
-  D --> E[Sentence Transformer embeddings]
-  E --> F[(SQLite knowledge store)]
-  B --> G[Question embedding]
+  A[User uploads PDF / DOCX / TXT] --> B[Text extraction]
+  B --> C[Chunking + page metadata]
+  C --> D[Embedding model]
+  D --> E[(SQLite vector store)]
+  F[User question] --> G[Question embedding]
   G --> H[Semantic retrieval]
-  F --> H
-  H --> I[Top-k passages + source IDs]
-  I --> J[Private Docker network]
-  J --> K[Ollama server]
-  K --> L[Llama 3.2 3B]
-  L --> M[Grounded answer + source IDs]
-  M --> B
+  E --> H
+  H --> I[Relevant passages + source IDs]
+  I --> J[Ollama on application server]
+  J --> K[Grounded answer]
+  K --> L[Answer + source evidence in browser]
 ```
 
-## Run locally with Docker (recommended)
+The uploaded document is the evidence source. The language model is used to formulate an answer from retrieved passages; it should not be treated as an independent source of truth.
 
-Requirements:
-- Docker Desktop or Docker Engine with Docker Compose
-- At least **8 GB RAM** available to Docker; **12–16 GB is recommended** for a smoother experience
-- Internet access on first launch to download the container images, embedding model and LLM
+## Technology
 
-```bash
-git clone https://github.com/YOUR_USERNAME/enterprise-document-intelligence-assistant.git
-cd enterprise-document-intelligence-assistant
-cp .env.example .env
-docker compose up --build
-```
+| Area | Technology |
+|---|---|
+| User interface | Streamlit |
+| Language | Python |
+| Document parsing | pypdf, python-docx |
+| Embeddings | Sentence Transformers |
+| Retrieval/storage | SQLite and vector similarity |
+| Language model serving | Ollama |
+| Containerization | Docker Compose |
 
-On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp` if needed.
+## Deployment model
 
-The first startup automatically downloads `llama3.2:3b`. This may take a few minutes and several GB of disk space. Then open:
+The public-facing experience is browser-only. The server operator provisions the host, installs Docker, downloads the Ollama model and runs the application. Recruiters and other visitors do not perform those setup steps.
 
-`http://localhost:8501`
+Ollama avoids dependence on a third-party per-request API quota, but it does **not** make hosting free: the host still needs sufficient memory, CPU and persistent disk. See [Deployment guide](docs/DEPLOYMENT.md) for the operator setup.
 
-The recruiter does not perform these setup steps when using the deployed public URL; the project owner performs them once on the server.
+## Responsible demo use and limitations
 
-### Change the model
+- Use public or fictional documents in a portfolio demo. Do not upload confidential company or personal records.
+- Answers are grounded using retrieved passages and source references, but grounding safeguards are not a mathematical guarantee against hallucinations. Verify the cited text for important decisions.
+- Scanned/image-only PDF OCR is not included unless separately configured.
+- This portfolio application is not a production multi-tenant records platform. Authentication, tenant-level authorization, encryption-at-rest, audit logging and abuse controls require additional hardening before real enterprise use.
+- Persistent storage and backups must be configured by the host if uploaded documents need to survive server replacement.
 
-Set `OLLAMA_MODEL` in `.env` and restart the stack. For example, a larger model may improve answer quality but needs more memory and compute. The default 3B model is selected to keep hosting requirements more manageable.
+## Repository documentation
 
-## Deploy a public demo
+- [Architecture](docs/ARCHITECTURE.md)
+- [Deployment and operator setup](docs/DEPLOYMENT.md)
+- [Interview preparation](docs/INTERVIEW_PREPARATION.md)
 
-Use a Linux VPS or cloud VM that supports Docker. Do **not** assume a free Streamlit-only hosting tier can run Ollama reliably.
+## Local development
 
-Suggested starting point:
-- 4 vCPU
-- 8 GB RAM minimum; 16 GB preferred
-- 30–50 GB SSD for Docker images, model files and temporary data
-- HTTPS reverse proxy (Caddy or Nginx) in front of port 8501
-- Firewall: expose only SSH and HTTPS; do not expose Ollama port 11434
-
-Deployment outline:
-1. Provision the VM and install Docker Engine + Compose.
-2. Clone this repository onto the VM.
-3. Configure `.env` with `OLLAMA_ENABLED=true`, `OLLAMA_BASE_URL=http://ollama:11434`, and `OLLAMA_MODEL=llama3.2:3b`.
-4. Run `docker compose up -d --build`.
-5. Configure a domain and HTTPS reverse proxy to the app on port 8501.
-6. Add the public HTTPS URL to the GitHub README and resume.
-7. Test with the included fictional handbook and several questions before sharing.
-
-The Compose stack keeps Ollama on an internal Docker network and automatically pulls the model into a persistent volume. The app container has a 6 GB memory limit; adjust it and the VM size if needed.
-
-## Optional Gemini fallback
-
-Ollama is the primary answer engine. If desired, add a server-side `GEMINI_API_KEY` and `GEMINI_MODEL` to `.env` to enable Gemini only when Ollama is unavailable. Never commit real API keys. Do not put keys in frontend code.
-
-## Run without Docker (local development)
-
-1. Install Python 3.10–3.12 and Ollama.
-2. Pull the model and start Ollama:
-   ```bash
-   ollama pull llama3.2:3b
-   ollama serve
-   ```
-3. Create a virtual environment and install dependencies:
-   ```bash
-   python -m venv .venv
-   # Windows PowerShell
-   .venv\Scripts\Activate.ps1
-   # macOS/Linux
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
-4. Set `OLLAMA_ENABLED=true` and `OLLAMA_BASE_URL=http://localhost:11434` in `.env`.
-5. Start the UI:
-   ```bash
-   streamlit run app.py
-   ```
-
-## Example
-
-Upload `data/sample_documents/employee_handbook_sample.txt`, index it, and ask:
-
-`How many days of annual leave are provided?`
-
-The sample handbook is fictional and intended for demonstration.
-
-## Grounding and limitations
-
-- The model is instructed to answer only from retrieved passages and cite source IDs. The application validates that cited IDs exist in the retrieved context; this is a safeguard, not a mathematical guarantee against hallucinations.
-- Inspect source passages for important decisions. If retrieval finds no sufficiently relevant evidence, the app abstains.
-- OCR for scanned/image-only PDFs is not included.
-- The public demo is not a production multi-tenant records platform. It uses session-isolated SQLite files but does not implement full authentication, durable tenant authorization, encryption-at-rest, or comprehensive abuse protection.
-- Use synthetic or public documents only. Never upload confidential company records to a public portfolio demo.
-- Uploaded documents may be lost if the host deletes its local disk. Use persistent server storage and backups for longer-lived deployments.
-- Public hosting incurs server costs even though Ollama itself does not charge a per-request API fee.
-
-## Tests
-
-```bash
-pytest -q
-```
-
-## Interview talking points
-
-- Why RAG retrieves evidence before text generation
-- How embeddings and cosine similarity work
-- Why chunk overlap and page metadata matter
-- How the system abstains when evidence is weak
-- Why a self-hosted LLM removes third-party API quota dependence but shifts cost to infrastructure
-- How to validate retrieval quality and grounded answer quality
+For contributors who want to run the project on their own machine, see [Deployment guide](docs/DEPLOYMENT.md). Recruiters using a deployed demo do not need to follow those instructions.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT — see [LICENSE](LICENSE).
