@@ -74,7 +74,7 @@ st.markdown("""
   <div class="hero-kicker">Enterprise knowledge, made accessible</div>
   <h1>DocuMind<span style="color:#91b1ff">.</span></h1>
   <p>Your document intelligence workspace. Ask questions across PDFs, Word files and text documents — with answers grounded in traceable source evidence.</p>
-  <span class="hero-pill">PRIVATE BY DESIGN · RETRIEVAL-AUGMENTED GENERATION</span>
+  <span class="hero-pill">SOURCE-GROUNDED ANSWERS · RETRIEVAL-AUGMENTED GENERATION</span>
 </div>
 """, unsafe_allow_html=True)
 
