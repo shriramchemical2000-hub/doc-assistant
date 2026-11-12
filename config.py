@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 @dataclass(frozen=True)
 class Settings:
     database_path: str
@@ -19,6 +20,7 @@ class Settings:
     chunk_size: int
     chunk_overlap: int
 
+
 def get_settings() -> Settings:
     return Settings(
         database_path=os.getenv("DATABASE_PATH", "data/assistant.db"),
@@ -26,7 +28,8 @@ def get_settings() -> Settings:
         embedding_model=os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"),
         gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
-        ollama_enabled=os.getenv("OLLAMA_ENABLED", "true").lower() == "true",
+        # Hosted free-tier deployment uses Gemini. Docker Compose explicitly enables Ollama.
+        ollama_enabled=os.getenv("OLLAMA_ENABLED", "false").lower() == "true",
         ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
         ollama_model=os.getenv("OLLAMA_MODEL", "llama3.2:3b"),
         default_top_k=int(os.getenv("DEFAULT_TOP_K", "5")),
