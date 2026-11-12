@@ -116,8 +116,10 @@ except Exception as exc:
 retriever = Retriever(store, embedder)
 answer_service = AnswerService(settings)
 docs = store.list_documents()
-model_label = settings.ollama_model if settings.ollama_enabled else (
-    settings.gemini_model if settings.gemini_api_key else "Evidence-only"
+model_label = (
+    settings.gemini_model if settings.gemini_api_key
+    else settings.ollama_model if settings.ollama_enabled
+    else "Evidence-only"
 )
 
 with st.sidebar:
@@ -186,7 +188,7 @@ m1, m2, m3 = st.columns(3)
 for col, label, value in [
     (m1, "Documents indexed", str(len(docs))),
     (m2, "Knowledge passages", str(store.count_chunks())),
-    (m3, "AI answer engine", "Ollama" if settings.ollama_enabled else ("Gemini" if settings.gemini_api_key else "Evidence")),
+    (m3, "AI answer engine", "Gemini" if settings.gemini_api_key else ("Ollama" if settings.ollama_enabled else "Evidence")),
 ]:
     with col:
         st.markdown(f"<div class='stat'><div class='stat-label'>{label}</div><div class='stat-value'>{value}</div></div>", unsafe_allow_html=True)
