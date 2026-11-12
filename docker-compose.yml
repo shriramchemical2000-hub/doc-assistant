@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     volumes:
       - ollama-models:/root/.ollama
-    # Keep Ollama private to the Docker network; do not expose port 11434 publicly.
+    # Ollama stays on the private Compose network. Do not publish port 11434.
 
   ollama-model-init:
     image: ollama/ollama:latest
@@ -17,8 +17,8 @@ services:
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
     entrypoint: ["/bin/sh", "-c"]
     command: >
-      'until ollama list >/dev/null 2>&1; do sleep 2; done;
-       ollama pull "$${OLLAMA_MODEL}"'
+      until ollama list >/dev/null 2>&1; do sleep 2; done;
+      ollama pull "$${OLLAMA_MODEL}"
     volumes:
       - ollama-models:/root/.ollama
     restart: "no"
@@ -31,7 +31,7 @@ services:
       ollama-model-init:
         condition: service_completed_successfully
     ports:
-      - "8501:8501"
+      - "127.0.0.1:8501:8501"
     environment:
       OLLAMA_ENABLED: "true"
       OLLAMA_BASE_URL: http://ollama:11434
