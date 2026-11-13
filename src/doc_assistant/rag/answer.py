@@ -9,6 +9,7 @@ import requests
 class AnswerResult:
     text: str
     mode: str
+    error: str = ""
 
 
 class AnswerService:
@@ -16,57 +17,80 @@ class AnswerService:
         self.settings = settings
 
     @staticmethod
-    def _evidence_only(hits) -> AnswerResult:
+    def _evidence_only(hits, error: str = "") -> AnswerResult:
         if not hits:
             return AnswerResult(
                 "I couldn't find sufficiently relevant information in the indexed documents. "
                 "Try rephrasing your question or adding a more relevant document.",
                 "no-evidence",
+                error,
             )
-        lines = ["I couldn't generate a model response. Here are the most relevant passages I found:"]
+        lines = ["I couldn't generate an AI response. The retrieved evidence is shown below:"]
         for i, hit in enumerate(hits, 1):
             lines.append(f"\n[S{i}] {hit.metadata['filename']} (page {hit.metadata['page']}):\n{hit.text}")
-        return AnswerResult("\n".join(lines), "evidence-only")
+        return AnswerResult("\n".join(lines), "evidence-only", error)
+
+    @staticmethod
+    def _extract_text(payload: dict) -> str:
+        candidates = payload.get("candidates") or []
+        if not candidates:
+            feedback = payload.get("promptFeedback") or {}
+            reason = feedback.get("blockReason") or "not supplied"
+            raise ValueError(f"Gemini returned no candidates. Block reason: {reason}")
+        candidate = candidates[0]
+        parts = (candidate.get("content") or {}).get("parts") or []
+        generated = "\n".join(part.get("text", "") for part in parts if isinstance(part, dict)).strip()
+        if not generated:
+            reason = candidate.get("finishReason", "unknown")
+            raise ValueError(f"Gemini returned an empty response (finish reason: {reason}).")
+        return generated
+
+    def _call_gemini(self, prompt: str, max_output_tokens: int = 1400) -> str:
+        model = self.settings.gemini_model
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        response = requests.post(
+            url,
+            headers={"x-goog-api-key": self.settings.gemini_api_key},
+            json={
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.2, "maxOutputTokens": max_output_tokens},
+            },
+            timeout=(15, 120),
+        )
+        if not response.ok:
+            try:
+                detail = (response.json().get("error") or {}).get("message", "")
+            except (ValueError, AttributeError):
+                detail = response.text[:400]
+            raise RuntimeError(f"Gemini API HTTP {response.status_code}: {detail or response.reason}")
+        return self._extract_text(response.json())
 
     def answer(self, question: str, hits) -> AnswerResult:
         if not hits:
             return self._evidence_only(hits)
-
         evidence = "\n\n".join(
             f"[S{i}] File: {hit.metadata['filename']} | Page: {hit.metadata['page']}\n{hit.text}"
             for i, hit in enumerate(hits, 1)
         )
         prompt = (
-            "You are DocuMind, a document question-answering assistant. Answer only from the evidence below. "
-            "If the evidence does not answer the question, say so clearly. Cite supporting passages using "
-            "[S1], [S2], etc. Do not invent facts or citations. Keep the answer concise and useful.\n\n"
+            "You are DocuMind, a precise document question-answering assistant. Answer using ONLY the "
+            "supplied evidence. Give the direct answer first. Every factual claim must have an inline "
+            "citation such as [S1], and cite at least one source. If the evidence does not contain the "
+            "answer, say it is not specified. Never guess.\n\n"
             f"QUESTION:\n{question}\n\nEVIDENCE:\n{evidence}\n\nANSWER:"
         )
-
-        # Gemini is the primary hosted engine. The API key is read server-side from secrets/env.
+        gemini_error = ""
         if self.settings.gemini_api_key:
             try:
-                model = self.settings.gemini_model
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-                response = requests.post(
-                    url,
-                    headers={"x-goog-api-key": self.settings.gemini_api_key},
-                    json={
-                        "contents": [{"parts": [{"text": prompt}]}],
-                        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1024},
-                    },
-                    timeout=(10, 90),
-                )
-                response.raise_for_status()
-                payload = response.json()
-                parts = payload["candidates"][0]["content"]["parts"]
-                generated = "\n".join(part.get("text", "") for part in parts).strip()
-                if generated and self._citations_valid(generated, len(hits)):
+                generated = self._call_gemini(prompt)
+                if self._citations_valid(generated, len(hits)):
                     return AnswerResult(generated, "gemini")
-            except (requests.RequestException, ValueError, KeyError, IndexError, TypeError):
-                pass
+                gemini_error = "Gemini responded, but its answer did not contain a valid source citation."
+            except (requests.RequestException, ValueError, RuntimeError, KeyError, IndexError, TypeError) as exc:
+                gemini_error = str(exc)[:700]
+        else:
+            gemini_error = "GEMINI_API_KEY is not configured in the app's server-side secrets."
 
-        # Optional local fallback for Docker/local development.
         if self.settings.ollama_enabled:
             try:
                 response = requests.post(
@@ -78,10 +102,9 @@ class AnswerService:
                 generated = response.json().get("response", "").strip()
                 if generated and self._citations_valid(generated, len(hits)):
                     return AnswerResult(generated, "ollama")
-            except (requests.RequestException, ValueError, KeyError, TypeError):
-                pass
-
-        return self._evidence_only(hits)
+            except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
+                gemini_error += f" Local fallback: {str(exc)[:300]}"
+        return self._evidence_only(hits, gemini_error)
 
     @staticmethod
     def _citations_valid(text: str, count: int) -> bool:
