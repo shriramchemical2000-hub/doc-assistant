@@ -57,7 +57,7 @@ class AnswerService:
             },
             timeout=(15, 120),
         )
-        if not response.ok:
+        if getattr(response, "ok", True) is False:
             try:
                 detail = (response.json().get("error") or {}).get("message", "")
             except (ValueError, AttributeError):
