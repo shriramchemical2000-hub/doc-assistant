@@ -25,6 +25,8 @@ DocuMind is a Retrieval-Augmented Generation (RAG) application for exploring PDF
 - Gemini API answer generation using retrieved evidence
 - Citation validation and evidence-only fallback
 - Expandable source passages for answer verification
+- Conversation-style Q&A with each question paired to its own answer
+- Smart Docs: long-document summaries, structured SOP drafting and plain-language SOP explanation
 - Streamlit browser interface
 - Optional Ollama mode for local/Docker deployments
 
@@ -68,7 +70,7 @@ The Gemini key is stored in Streamlit's server-side Secrets settings. It is neve
 
 ## Product preview
 
-The application provides a document workspace, upload controls, indexed-document list, question interface, answer panel and expandable source evidence. Screenshots will be added after the hosted app has been run and captured.
+The application provides a focused Q&A workspace and a separate Smart Docs workspace for document summaries and SOP workflows. Screenshots will be added after the hosted app has been run and captured.
 
 ## Responsible demo use and limitations
 
