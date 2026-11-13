@@ -132,6 +132,13 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+st.page_link(
+    "pages/Smart_Docs.py",
+    label="Open Smart Docs — summaries, SOP creation and SOP explanations",
+    icon="📚",
+    use_container_width=True,
+)
+
 if "documind_session_id" not in st.session_state:
     st.session_state["documind_session_id"] = uuid.uuid4().hex
 if "documind_latest" not in st.session_state:
@@ -248,7 +255,7 @@ for col, label, value in [
         st.markdown(f"<div class='stat'><div class='stat-label'>{label}</div><div class='stat-value'>{value}</div></div>", unsafe_allow_html=True)
 
 st.write("")
-st.info("For long-document summaries, SOP creation, or plain-language SOP explanations, open **Smart Docs** from the page navigation in the left sidebar.")
+st.caption("Smart Docs is also available as a separate page in the left navigation.")
 
 st.markdown("<div class='section-title'>Ask your documents</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtle'>Ask a question and get an answer grounded in your indexed documents.</div>", unsafe_allow_html=True)
