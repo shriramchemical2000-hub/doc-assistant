@@ -132,13 +132,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.page_link(
-    "pages/Smart_Docs.py",
-    label="Open Smart Docs — summaries, SOP creation and SOP explanations",
-    icon="📚",
-    use_container_width=True,
-)
-
 if "documind_session_id" not in st.session_state:
     st.session_state["documind_session_id"] = uuid.uuid4().hex
 if "documind_latest" not in st.session_state:
