@@ -81,7 +81,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.page_link("app.py", label="Back to Ask Documents", icon="📄")
+st.caption("Use **app** in the left sidebar to return to Ask Documents.")
 
 st.markdown("### Choose a workflow")
 task = st.radio(
