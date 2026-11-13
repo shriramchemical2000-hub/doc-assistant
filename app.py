@@ -32,49 +32,103 @@ settings = get_settings()
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
-:root { --ink:#172033; --muted:#68758a; --line:#e6eaf0; --brand:#315efb; --teal:#0c9b8e; }
-html, body, [class*="css"] { font-family:'DM Sans',sans-serif; }
-.stApp { background: #f6f8fc; }
-.block-container { max-width: 1440px; padding-top: 1.35rem; padding-bottom: 3rem; }
-[data-testid="stSidebar"] { background: #101a2d; border-right: 1px solid #253149; }
-[data-testid="stSidebar"] * { color: #eaf0fb !important; }
-[data-testid="stSidebar"] [data-testid="stFileUploader"] section { background:#1b2941; border:1px dashed #50617e; }
-[data-testid="stSidebar"] button { border-radius:10px; }
-.hero {
-  position:relative; overflow:hidden; padding:30px 34px; border-radius:22px;
-  color:white; background:linear-gradient(115deg,#101a2d 0%,#1d3560 55%,#315efb 100%);
-  box-shadow:0 16px 38px rgba(25,48,91,.16); margin-bottom:22px;
+:root {
+  --bg:#071714; --panel:rgba(20,48,42,.72); --panel2:rgba(28,62,53,.58);
+  --line:rgba(205,235,220,.13); --ink:#edf7f0; --muted:#a2b8aa;
+  --mint:#a7e6c2; --accent:#72d6ad; --gold:#d4c18b;
 }
-.hero:after { content:""; position:absolute; width:280px; height:280px; right:5%; top:-150px;
-  border:1px solid rgba(255,255,255,.18); border-radius:50%; box-shadow:0 0 0 35px rgba(255,255,255,.035),0 0 0 70px rgba(255,255,255,.025); }
-.hero-kicker { text-transform:uppercase; letter-spacing:2px; font-size:11px; font-weight:700; color:#b9cbff; }
-.hero h1 { font-family:'Manrope',sans-serif; font-size:36px; letter-spacing:-1.4px; margin:7px 0 5px; color:white; }
-.hero p { color:#d7e2fb; font-size:15px; margin:0; max-width:720px; }
-.hero-pill { display:inline-block; margin-top:18px; padding:6px 11px; border:1px solid rgba(255,255,255,.25);
-  border-radius:30px; font-size:11px; color:#eff4ff; background:rgba(255,255,255,.08); }
-.section-title { font-family:'Manrope',sans-serif; color:#172033; font-weight:800; font-size:19px; letter-spacing:-.4px; }
-.subtle { color:#718096; font-size:13px; }
-.panel { background:white; border:1px solid #e6eaf0; border-radius:17px; padding:19px 20px; }
-.stat { background:white; border:1px solid #e6eaf0; border-radius:15px; padding:14px 17px; }
-.stat-label { color:#718096; font-size:11px; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
-.stat-value { color:#172033; font-family:'Manrope',sans-serif; font-size:24px; font-weight:800; margin-top:3px; }
-.answer-card { background:white; border:1px solid #e3e9f3; border-left:4px solid #315efb; border-radius:15px; padding:20px 22px; }
-div[data-testid="stTextArea"] textarea { border-radius:12px; border:1px solid #dce3ee; background:#fff; }
-.stButton>button { border-radius:10px; font-weight:700; min-height:42px; }
-div[data-testid="stExpander"] { background:white; border:1px solid #e6eaf0; border-radius:12px; }
-div[data-testid="stAlert"] { border-radius:12px; }
-footer {visibility:hidden;}
-#MainMenu {visibility:hidden;}
-@media (max-width: 800px) { .hero {padding:24px;} .hero h1 {font-size:29px;} }
+html, body, [class*="css"] { font-family:'DM Sans',sans-serif; }
+.stApp {
+  background:
+    radial-gradient(ellipse at 80% 12%,rgba(167,190,112,.19),transparent 34%),
+    radial-gradient(ellipse at 25% 40%,rgba(49,125,101,.22),transparent 42%),
+    linear-gradient(135deg,#061411 0%,#0b211c 48%,#101d18 100%);
+  color:var(--ink);
+}
+.block-container { max-width:1500px; padding-top:1.2rem; padding-bottom:3rem; }
+[data-testid="stHeader"] { background:transparent; }
+[data-testid="stToolbar"] { right:1rem; }
+[data-testid="stSidebar"] {
+  background:linear-gradient(180deg,rgba(9,30,25,.98),rgba(11,35,29,.96));
+  border-right:1px solid var(--line);
+}
+[data-testid="stSidebar"] * { color:#e5f2e9; }
+[data-testid="stSidebar"] [data-testid="stFileUploader"] section {
+  background:rgba(255,255,255,.045); border:1px dashed rgba(177,220,194,.35);
+}
+[data-testid="stSidebar"] [data-testid="stFileUploader"] small,
+[data-testid="stSidebar"] [data-testid="stFileUploader"] span { color:#c2d8c9 !important; }
+[data-testid="stSidebar"] button { border-radius:11px; }
+.hero {
+  position:relative; overflow:hidden; padding:26px 30px; border-radius:22px;
+  color:#f4fff7; background:linear-gradient(115deg,rgba(19,54,45,.88),rgba(41,83,68,.74) 58%,rgba(119,126,76,.55));
+  border:1px solid rgba(221,245,225,.18);
+  box-shadow:0 18px 55px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.10);
+  backdrop-filter:blur(18px); margin-bottom:20px;
+}
+.hero:after {
+  content:""; position:absolute; width:260px; height:260px; right:7%; top:-155px;
+  border:1px solid rgba(255,255,255,.20); border-radius:50%;
+  box-shadow:0 0 0 32px rgba(255,255,255,.035),0 0 0 68px rgba(255,255,255,.025);
+}
+.hero-kicker { text-transform:uppercase; letter-spacing:2px; font-size:10px; font-weight:700; color:#b9dfc7; }
+.hero h1 { font-family:'Manrope',sans-serif; font-size:34px; letter-spacing:-1.2px; margin:6px 0 5px; color:#f4fff7; }
+.hero p { color:#d3e7d9; font-size:14px; margin:0; max-width:760px; }
+.hero-pill {
+  display:inline-block; margin-top:15px; padding:6px 11px;
+  border:1px solid rgba(255,255,255,.22); border-radius:30px;
+  font-size:10px; color:#effff3; background:rgba(255,255,255,.07);
+}
+.section-title { font-family:'Manrope',sans-serif; color:#eff8f1; font-weight:800; font-size:19px; letter-spacing:-.4px; }
+.subtle { color:#a7bdb0; font-size:13px; }
+.panel, .answer-card, .stat {
+  background:linear-gradient(145deg,rgba(27,59,51,.76),rgba(18,43,37,.78));
+  border:1px solid var(--line); border-radius:17px; padding:18px 20px;
+  box-shadow:0 12px 32px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.045);
+  backdrop-filter:blur(14px);
+}
+.stat { padding:15px 17px; min-height:88px; }
+.stat-label { color:#a8c2b2; font-size:10px; text-transform:uppercase; letter-spacing:1.1px; font-weight:700; }
+.stat-value { color:#f0fff4; font-family:'Manrope',sans-serif; font-size:25px; font-weight:800; margin-top:4px; }
+.answer-card { border-left:3px solid #8fdbb1; color:#edf7f0; }
+.stMarkdown, .stMarkdown p, .stMarkdown li, .stCaption, label { color:#e5f1e8; }
+.stCaption, [data-testid="stCaptionContainer"] { color:#a9bdaf !important; }
+div[data-testid="stTextArea"] textarea, div[data-testid="stTextInput"] input {
+  border-radius:12px; border:1px solid rgba(194,224,203,.20);
+  background:rgba(6,22,18,.72); color:#f0fff4;
+}
+div[data-testid="stTextArea"] textarea::placeholder { color:#8fa99a; }
+.stButton>button {
+  border-radius:11px; font-weight:700; min-height:42px;
+  border:1px solid rgba(190,231,202,.20);
+  background:rgba(164,218,183,.10); color:#effff3;
+}
+.stButton>button[kind="primary"] {
+  background:linear-gradient(110deg,#4a9d78,#72c69a); color:#092017; border:0;
+}
+.stButton>button:hover { border-color:rgba(178,235,196,.55); color:white; }
+.stButton>button[kind="primary"]:hover { color:#071a12; filter:brightness(1.07); }
+div[data-testid="stExpander"] {
+  background:rgba(17,43,36,.75); border:1px solid var(--line); border-radius:12px;
+}
+div[data-testid="stExpander"] summary, div[data-testid="stExpander"] p { color:#e7f4eb; }
+div[data-testid="stAlert"] { border-radius:12px; background:rgba(25,58,48,.75); color:#eaf7ed; }
+hr { border-color:rgba(211,237,219,.13) !important; }
+[data-testid="stFileUploader"] section { border-radius:12px; }
+footer {visibility:hidden;} #MainMenu {visibility:hidden;}
+@media (max-width:800px) {
+  .hero {padding:22px;} .hero h1 {font-size:28px;}
+  .block-container {padding-left:1rem;padding-right:1rem;}
+}
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="hero">
-  <div class="hero-kicker">Enterprise knowledge, made accessible</div>
-  <h1>DocuMind<span style="color:#91b1ff">.</span></h1>
-  <p>Your document intelligence workspace. Ask questions across PDFs, Word files and text documents — with answers grounded in traceable source evidence.</p>
-  <span class="hero-pill">SOURCE-GROUNDED ANSWERS · RETRIEVAL-AUGMENTED GENERATION</span>
+  <div class="hero-kicker">Your private knowledge workspace</div>
+  <h1>Welcome to DocuMind<span style="color:#b8e7c5">.</span></h1>
+  <p>Bring your documents together, ask questions in plain language, and explore answers backed by traceable source evidence.</p>
+  <span class="hero-pill">DOCUMENT INTELLIGENCE &nbsp;·&nbsp; GEMINI-POWERED &nbsp;·&nbsp; SOURCE-TRACEABLE</span>
 </div>
 """, unsafe_allow_html=True)
 
