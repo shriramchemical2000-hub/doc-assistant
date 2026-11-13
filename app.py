@@ -134,8 +134,8 @@ st.markdown("""
 
 if "documind_session_id" not in st.session_state:
     st.session_state["documind_session_id"] = uuid.uuid4().hex
-if "documind_history" not in st.session_state:
-    st.session_state["documind_history"] = []
+if "documind_latest" not in st.session_state:
+    st.session_state["documind_latest"] = None
 
 @st.cache_resource(show_spinner="Loading semantic search model…")
 def get_embedder(model_name: str):
@@ -228,7 +228,7 @@ with st.sidebar:
             st.rerun()
     if docs and st.button("Clear workspace", use_container_width=True):
         store.clear()
-        st.session_state["documind_history"] = []
+        st.session_state["documind_latest"] = None
         st.rerun()
     st.markdown("---")
     st.markdown("### System status")
@@ -252,7 +252,7 @@ ask_tab, smart_tab = st.tabs(["Ask documents", "Smart Docs"])
 
 with ask_tab:
     st.markdown("<div class='section-title'>Ask your documents</div>", unsafe_allow_html=True)
-    st.markdown("<div class='subtle'>Ask questions across your indexed documents. Every answer stays with its own question and source evidence.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subtle'>Ask a question and get an answer grounded in your indexed documents.</div>", unsafe_allow_html=True)
     with st.form("document_question_form", clear_on_submit=True):
         question = st.text_area(
             "Your question",
@@ -263,43 +263,37 @@ with ask_tab:
     if ask and question.strip():
         if not store.count_chunks():
             st.warning("Upload and index a document first.")
+            st.session_state["documind_latest"] = None
         else:
             with st.spinner("Finding evidence and generating your answer…"):
                 hits = retriever.search(question.strip(), top_k=settings.default_top_k)
                 hits = [hit for hit in hits if hit.score >= settings.default_min_score]
                 answer = answer_service.answer(question.strip(), hits)
-            st.session_state["documind_history"].append({
-                "question": question.strip(), "answer": answer, "hits": hits,
-            })
-    if st.session_state["documind_history"]:
-        for index, item in enumerate(st.session_state["documind_history"]):
-            with st.container():
-                st.markdown(f"**You asked**")
-                st.markdown(item["question"])
-                st.markdown("**DocuMind**")
-                st.markdown("<div class='answer-card'>", unsafe_allow_html=True)
-                st.write(item["answer"].text)
-                st.markdown("</div>", unsafe_allow_html=True)
-                if item["answer"].mode == "gemini":
-                    st.caption("Answered by Gemini · based on retrieved document evidence")
-                elif item["answer"].mode == "ollama":
-                    st.caption("Answered by the local model · based on retrieved document evidence")
-                elif item["answer"].mode == "no-evidence":
-                    st.caption("No sufficiently relevant evidence was found.")
-                else:
-                    st.caption("AI generation did not complete. Retrieved evidence is shown above.")
-                    if item["answer"].error:
-                        with st.expander("Generation diagnostic"):
-                            st.code(item["answer"].error)
-                if item["hits"]:
-                    with st.expander(f"View source evidence ({len(item['hits'])})"):
-                        render_sources(item["hits"])
-                st.markdown("---")
-        if st.button("Clear conversation", key="clear_conversation"):
-            st.session_state["documind_history"] = []
-            st.rerun()
-    else:
-        st.markdown("<div class='panel' style='margin-top:16px'><div style='font-weight:700'>Your document conversation starts here.</div><div class='subtle'>Ask a question after indexing a document. Your questions and answers will remain paired in this conversation.</div></div>", unsafe_allow_html=True)
+            st.session_state["documind_latest"] = {
+                "answer": answer,
+                "hits": hits,
+            }
+
+    latest = st.session_state.get("documind_latest")
+    if latest:
+        st.markdown("### Answer")
+        st.markdown("<div class='answer-card'>", unsafe_allow_html=True)
+        st.write(latest["answer"].text)
+        st.markdown("</div>", unsafe_allow_html=True)
+        if latest["answer"].mode == "gemini":
+            st.caption("Answered by Gemini · based on retrieved document evidence")
+        elif latest["answer"].mode == "ollama":
+            st.caption("Answered by the local model · based on retrieved document evidence")
+        elif latest["answer"].mode == "no-evidence":
+            st.caption("No sufficiently relevant evidence was found.")
+        else:
+            st.caption("AI generation did not complete. Retrieved evidence is shown above.")
+            if latest["answer"].error:
+                with st.expander("Generation diagnostic"):
+                    st.code(latest["answer"].error)
+        if latest["hits"]:
+            with st.expander(f"View source evidence ({len(latest['hits'])})"):
+                render_sources(latest["hits"])
 
 with smart_tab:
     st.markdown("<div class='section-title'>Smart Docs</div>", unsafe_allow_html=True)
