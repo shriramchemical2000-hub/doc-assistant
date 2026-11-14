@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
+import time
 import requests
+
+# Retry only temporary service/network failures. Persistent quota and configuration
+# errors are surfaced promptly instead of keeping the user waiting.
+_GEMINI_RETRY_DELAYS = (2, 5)
+_GEMINI_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 
 
 @dataclass(frozen=True)
@@ -48,22 +54,55 @@ class AnswerService:
     def _call_gemini(self, prompt: str, max_output_tokens: int = 1400) -> str:
         model = self.settings.gemini_model
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-        response = requests.post(
-            url,
-            headers={"x-goog-api-key": self.settings.gemini_api_key},
-            json={
-                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.2, "maxOutputTokens": max_output_tokens},
-            },
-            timeout=(15, 120),
-        )
-        if getattr(response, "ok", True) is False:
+        payload = {
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.2, "maxOutputTokens": max_output_tokens},
+        }
+
+        for attempt in range(len(_GEMINI_RETRY_DELAYS) + 1):
             try:
-                detail = (response.json().get("error") or {}).get("message", "")
-            except (ValueError, AttributeError):
-                detail = response.text[:400]
-            raise RuntimeError(f"Gemini API HTTP {response.status_code}: {detail or response.reason}")
-        return self._extract_text(response.json())
+                response = requests.post(
+                    url,
+                    headers={"x-goog-api-key": self.settings.gemini_api_key},
+                    json=payload,
+                    timeout=(15, 120),
+                )
+            except requests.RequestException:
+                if attempt >= len(_GEMINI_RETRY_DELAYS):
+                    raise
+                time.sleep(_GEMINI_RETRY_DELAYS[attempt])
+                continue
+
+            if getattr(response, "ok", True) is False:
+                status = getattr(response, "status_code", 0)
+                try:
+                    detail = (response.json().get("error") or {}).get("message", "")
+                except (ValueError, AttributeError):
+                    detail = getattr(response, "text", "")[:400]
+                reason = detail or getattr(response, "reason", "Unknown API error")
+
+                if status in _GEMINI_RETRYABLE_STATUS and attempt < len(_GEMINI_RETRY_DELAYS):
+                    # Respect a short numeric Retry-After header when supplied,
+                    # but cap it so a free demo does not appear frozen.
+                    headers = getattr(response, "headers", {}) or {}
+                    retry_after = headers.get("Retry-After")
+                    try:
+                        delay = min(max(float(retry_after), 1.0), 10.0) if retry_after else _GEMINI_RETRY_DELAYS[attempt]
+                    except (TypeError, ValueError):
+                        delay = _GEMINI_RETRY_DELAYS[attempt]
+                    time.sleep(delay)
+                    continue
+
+                retry_note = (
+                    f" after {attempt + 1} attempts"
+                    if status in _GEMINI_RETRYABLE_STATUS and attempt > 0
+                    else ""
+                )
+                raise RuntimeError(f"Gemini API HTTP {status}{retry_note}: {reason}")
+
+            return self._extract_text(response.json())
+
+        raise RuntimeError("Gemini request failed after retry attempts.")
 
     def answer(self, question: str, hits) -> AnswerResult:
         if not hits:
