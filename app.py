@@ -542,11 +542,13 @@ else:
                 )
                 with st.expander("Inspect closest passages (below relevance cutoff)"):
                     render_sources(closest)
-        else:
-            st.caption("AI generation did not complete. Retrieved evidence is shown above.")
+        elif latest["answer"].mode == "evidence-only":
+            st.caption("AI generation was unavailable. Retrieved evidence is shown above.")
             if latest["answer"].error:
                 with st.expander("Generation diagnostic"):
                     st.code(latest["answer"].error)
+        else:
+            st.caption("Answer generated using retrieved document evidence.")
         if latest["hits"]:
             with st.expander(f"View source evidence ({len(latest['hits'])})"):
                 render_sources(latest["hits"])
