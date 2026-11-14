@@ -179,6 +179,14 @@ model_label = (
 with st.sidebar:
     st.markdown("## ◈ DocuMind")
     st.caption("DOCUMENT WORKSPACE")
+    st.markdown("### Workspace")
+    workspace = st.radio(
+        "Select workspace",
+        ["Ask documents", "Smart Docs"],
+        index=0,
+        key="documind_workspace",
+        label_visibility="collapsed",
+    )
     st.markdown("---")
     st.markdown("### Add to your knowledge base")
     uploaded_files = st.file_uploader(
@@ -247,53 +255,124 @@ for col, label, value in [
     with col:
         st.markdown(f"<div class='stat'><div class='stat-label'>{label}</div><div class='stat-value'>{value}</div></div>", unsafe_allow_html=True)
 
-st.write("")
-st.caption("Smart Docs is also available as a separate page in the left navigation.")
-
-st.markdown("<div class='section-title'>Ask your documents</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtle'>Ask a question and get an answer grounded in your indexed documents.</div>", unsafe_allow_html=True)
-with st.form("document_question_form", clear_on_submit=True):
-    question = st.text_area(
-        "Your question",
-        placeholder="For example: How many annual leave days does an eligible employee receive?",
-        height=90,
+if workspace == "Smart Docs":
+    st.markdown("<div class='section-title'>Smart Docs</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='subtle'>Summarise lengthy documents, create structured SOPs, or explain existing procedures in plain language.</div>",
+        unsafe_allow_html=True,
     )
-    ask = st.form_submit_button("Ask DocuMind  →", type="primary", use_container_width=True)
-if ask and question.strip():
-    if not store.count_chunks():
-        st.warning("Upload and index a document first.")
-        st.session_state["documind_latest"] = None
-    else:
-        with st.spinner("Finding evidence and generating your answer…"):
-            hits = retriever.search(question.strip(), top_k=settings.default_top_k)
-            hits = [hit for hit in hits if hit.score >= settings.default_min_score]
-            answer = answer_service.answer(question.strip(), hits)
-        st.session_state["documind_latest"] = {
-            "answer": answer,
-            "hits": hits,
-        }
+    smart_task = st.radio(
+        "What should DocuMind do?",
+        ["Summarise document", "Create an SOP", "Explain an existing SOP"],
+        horizontal=True,
+        key="smart_docs_task",
+    )
+    descriptions = {
+        "Summarise document": "Generate an executive summary, section-by-section breakdown, and key takeaways.",
+        "Create an SOP": "Draft a structured SOP with purpose, responsibilities, inputs, ordered steps, decision points, records, and escalation paths.",
+        "Explain an existing SOP": "Explain the procedure in plain language, including roles, checks, sequence, and cautions.",
+    }
+    st.info(descriptions[smart_task])
+    smart_file = st.file_uploader(
+        "Upload a source document",
+        type=["pdf", "docx", "txt"],
+        accept_multiple_files=False,
+        key="smart_docs_upload",
+        max_upload_size=20,
+        help="PDF, DOCX and TXT · maximum 20 MB.",
+    )
+    smart_context = st.text_area(
+        "Additional instructions (optional)",
+        placeholder="Example: Focus on operating limits, maintenance responsibilities, safety checks and escalation criteria.",
+        height=85,
+        key="smart_docs_context",
+    )
+    if st.button("Generate with Smart Docs  →", type="primary", use_container_width=True, disabled=not smart_file):
+        st.session_state["smart_docs_result"] = None
+        if not settings.gemini_api_key:
+            st.error("Smart Docs requires GEMINI_API_KEY in the app's server-side Streamlit Secrets.")
+        else:
+            try:
+                pages = load_uploaded_file(smart_file.name, smart_file.getvalue())
+                full_text = "\n\n".join(
+                    f"[Page {page.page}]\n{page.text}" for page in pages if page.text.strip()
+                )
+                if not full_text.strip():
+                    st.error("No readable text was found. Scanned/image-only PDFs are not supported yet.")
+                else:
+                    with st.spinner("Processing the document in sections and preparing your output…"):
+                        from src.doc_assistant.rag.smart_docs import SmartDocsService
+                        service = SmartDocsService(settings)
+                        result = service.run(
+                            full_text,
+                            task=smart_task,
+                            instructions=smart_context.strip(),
+                        )
+                    st.session_state["smart_docs_result"] = {
+                        "filename": smart_file.name,
+                        "task": smart_task,
+                        "text": result,
+                    }
+            except Exception as exc:
+                st.error(f"Smart Docs could not complete the request: {str(exc)[:600]}")
 
-latest = st.session_state.get("documind_latest")
-if latest:
-    st.markdown("### Answer")
-    st.markdown("<div class='answer-card'>", unsafe_allow_html=True)
-    st.write(latest["answer"].text)
-    st.markdown("</div>", unsafe_allow_html=True)
-    if latest["answer"].mode == "gemini":
-        st.caption("Answered by Gemini · based on retrieved document evidence")
-    elif latest["answer"].mode == "ollama":
-        st.caption("Answered by the local model · based on retrieved document evidence")
-    elif latest["answer"].mode == "no-evidence":
-        st.caption("No sufficiently relevant evidence was found.")
-    else:
-        st.caption("AI generation did not complete. Retrieved evidence is shown above.")
-        if latest["answer"].error:
-            with st.expander("Generation diagnostic"):
-                st.code(latest["answer"].error)
-    if latest["hits"]:
-        with st.expander(f"View source evidence ({len(latest['hits'])})"):
-            render_sources(latest["hits"])
+    smart_result = st.session_state.get("smart_docs_result")
+    if smart_result:
+        st.markdown("---")
+        st.markdown("### Generated output")
+        st.caption(f"{smart_result['task']} · Source: {smart_result['filename']}")
+        st.markdown(smart_result["text"])
+        st.download_button(
+            "Download result as Markdown",
+            data=smart_result["text"],
+            file_name="documind_smart_docs_result.md",
+            mime="text/markdown",
+            use_container_width=True,
+        )
+else:
+    st.markdown("<div class='section-title'>Ask your documents</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subtle'>Ask a question and get an answer grounded in your indexed documents.</div>", unsafe_allow_html=True)
+    with st.form("document_question_form", clear_on_submit=True):
+        question = st.text_area(
+            "Your question",
+            placeholder="For example: How many annual leave days does an eligible employee receive?",
+            height=90,
+        )
+        ask = st.form_submit_button("Ask DocuMind  →", type="primary", use_container_width=True)
+    if ask and question.strip():
+        if not store.count_chunks():
+            st.warning("Upload and index a document first.")
+            st.session_state["documind_latest"] = None
+        else:
+            with st.spinner("Finding evidence and generating your answer…"):
+                hits = retriever.search(question.strip(), top_k=settings.default_top_k)
+                hits = [hit for hit in hits if hit.score >= settings.default_min_score]
+                answer = answer_service.answer(question.strip(), hits)
+            st.session_state["documind_latest"] = {
+                "answer": answer,
+                "hits": hits,
+            }
 
+    latest = st.session_state.get("documind_latest")
+    if latest:
+        st.markdown("### Answer")
+        st.markdown("<div class='answer-card'>", unsafe_allow_html=True)
+        st.write(latest["answer"].text)
+        st.markdown("</div>", unsafe_allow_html=True)
+        if latest["answer"].mode == "gemini":
+            st.caption("Answered by Gemini · based on retrieved document evidence")
+        elif latest["answer"].mode == "ollama":
+            st.caption("Answered by the local model · based on retrieved document evidence")
+        elif latest["answer"].mode == "no-evidence":
+            st.caption("No sufficiently relevant evidence was found.")
+        else:
+            st.caption("AI generation did not complete. Retrieved evidence is shown above.")
+            if latest["answer"].error:
+                with st.expander("Generation diagnostic"):
+                    st.code(latest["answer"].error)
+        if latest["hits"]:
+            with st.expander(f"View source evidence ({len(latest['hits'])})"):
+                render_sources(latest["hits"])
 
 
 st.markdown("""
