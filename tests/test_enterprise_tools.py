@@ -39,6 +39,6 @@ def test_training_material_prompt_is_source_grounded():
         "Knowledge quiz",
         "New employees",
     )
-    assert "10 questions" in output
+    assert "15 questions" in output
     assert "New employees" in output
     assert "Employees must submit the form" in output
