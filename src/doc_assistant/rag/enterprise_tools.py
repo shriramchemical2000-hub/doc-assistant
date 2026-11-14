@@ -14,7 +14,12 @@ class EnterpriseToolsService:
         value = (text or "").strip()
         if not value:
             raise ValueError(f"{label} contains no readable text.")
-        return value[:90000]
+        if len(value) > 90000:
+            raise ValueError(
+                f"{label} exceeds the current demo analysis limit of 90,000 characters. "
+                "Split the document into smaller sections and retry."
+            )
+        return value
 
     def _generate(self, prompt: str, max_tokens: int = 5000) -> str:
         if not self.generator.settings.gemini_api_key:
