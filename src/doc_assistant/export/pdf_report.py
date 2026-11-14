@@ -140,7 +140,7 @@ def _markdown_story(markdown_text: str, styles: dict) -> list:
                 code_lines.append(lines[index])
                 index += 1
             code_text = "<br/>".join(escape(part) for part in code_lines)
-            story.append(Paragraph(f'<font name="Courier">{code_text}</font>', styles["Code"]))
+            story.append(Paragraph(f'<font name="Courier">{code_text}</font>', styles["DocuMindCode"]))
             story.append(Spacer(1, 6))
             index += 1
             continue
@@ -170,7 +170,7 @@ def build_smart_docs_pdf(markdown_text: str, source_filename: str, task: str, in
     styles.add(ParagraphStyle(name="Quote", parent=styles["BodyText"], fontName=regular_font,
         fontSize=9, leading=13, leftIndent=12, borderColor=colors.HexColor("#8CC9A5"),
         borderWidth=2, borderPadding=7, textColor=colors.HexColor("#52675A")))
-    styles.add(ParagraphStyle(name="Code", parent=styles["Code"], fontName="Courier",
+    styles.add(ParagraphStyle(name="DocuMindCode", parent=styles["Code"], fontName="Courier",
         fontSize=7.5, leading=10, backColor=colors.HexColor("#F1F4F2"), borderPadding=6))
     styles.add(ParagraphStyle(name="TableHeader", fontName=bold_font, fontSize=7.5, leading=10, textColor=colors.white))
     styles.add(ParagraphStyle(name="TableCell", fontName=regular_font, fontSize=7.5, leading=10, textColor=colors.HexColor("#24352C")))
