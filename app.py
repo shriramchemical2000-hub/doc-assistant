@@ -13,6 +13,7 @@ from src.doc_assistant.rag.chunking import chunk_pages
 from src.doc_assistant.rag.embeddings import SentenceTransformerEmbedder
 from src.doc_assistant.rag.retriever import Retriever
 from src.doc_assistant.storage.sqlite_store import SQLiteStore
+from src.doc_assistant.export.pdf_report import build_smart_docs_pdf
 
 st.set_page_config(
     page_title="DocuMind | Document Intelligence",
@@ -332,10 +333,17 @@ if workspace == "Smart Docs":
                             task=smart_task,
                             instructions=smart_context.strip(),
                         )
+                    pdf_bytes = build_smart_docs_pdf(
+                        markdown_text=result,
+                        source_filename=smart_file.name,
+                        task=smart_task,
+                        instructions=smart_context.strip(),
+                    )
                     st.session_state["smart_docs_result"] = {
                         "filename": smart_file.name,
                         "task": smart_task,
                         "text": result,
+                        "pdf": pdf_bytes,
                     }
             except Exception as exc:
                 error_message = str(exc)
@@ -363,13 +371,18 @@ if workspace == "Smart Docs":
         st.markdown("### Generated output")
         st.caption(f"{smart_result['task']} · Source: {smart_result['filename']}")
         st.markdown(smart_result["text"])
+        safe_source = re.sub(r"[^A-Za-z0-9_-]+", "_", Path(smart_result["filename"]).stem).strip("_") or "document"
+        safe_task = re.sub(r"[^A-Za-z0-9_-]+", "_", smart_result["task"]).strip("_").lower()
         st.download_button(
-            "Download result as Markdown",
-            data=smart_result["text"],
-            file_name="documind_smart_docs_result.md",
-            mime="text/markdown",
+            "Download PDF report",
+            data=smart_result["pdf"],
+            file_name=f"DocuMind_{safe_source}_{safe_task}.pdf",
+            mime="application/pdf",
+            type="primary",
             use_container_width=True,
         )
+        with st.expander("View generated Markdown"):
+            st.markdown(smart_result["text"])
 else:
     st.markdown("<div class='section-title'>Ask your documents</div>", unsafe_allow_html=True)
     st.markdown("<div class='subtle'>Ask a question and get an answer grounded in your indexed documents.</div>", unsafe_allow_html=True)
