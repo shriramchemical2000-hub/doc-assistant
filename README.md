@@ -85,6 +85,7 @@ The application provides six workspaces selected directly in the left sidebar: *
 
 ## Repository documentation
 
+- [Demo walkthrough](docs/DEMO_GUIDE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Deployment and operator setup](docs/DEPLOYMENT.md)
 - [Interview preparation](docs/INTERVIEW_PREPARATION.md)
