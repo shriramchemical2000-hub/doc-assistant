@@ -57,10 +57,16 @@ class SmartDocsService:
             )
         elif task == "Create an SOP":
             map_instruction = (
-                "Extract process information from this section that could support a formal SOP: "
-                "purpose, scope, triggers, responsible roles, prerequisites, equipment/materials, "
-                "sequence of actions, decision points, limits, safety/quality checks, records, "
-                "exceptions and escalation. Do not invent absent steps; label gaps as 'Not specified'."
+                "Extract organisation-wide process information from this section for a formal, "
+                "department-neutral SOP. Capture: process purpose and boundaries; trigger and end "
+                "condition; process owner and participating roles; cross-functional hand-offs; "
+                "inputs, outputs and dependencies; prerequisites; systems, tools or resources; "
+                "ordered activities; decision points and criteria; approvals and control points; "
+                "risks, safeguards and quality checks; records and evidence; exceptions, service "
+                "failures and escalation routes; measures or service levels if stated; and related "
+                "policies or documents. Do not assume a particular industry, department, system, "
+                "role or regulatory framework. Do not invent absent steps; record gaps as "
+                "'Not specified in source'."
             )
         else:
             map_instruction = (
@@ -90,13 +96,35 @@ class SmartDocsService:
             )
         elif task == "Create an SOP":
             final_instruction = (
-                "Create a formal draft SOP based only on the extracted notes. Use these headings: "
-                "Title; Purpose; Scope; Definitions; Roles and Responsibilities; Prerequisites; "
-                "Tools/Materials; Procedure with numbered steps; Decision Points and Acceptance "
-                "Criteria; Safety/Quality Checks; Records; Exceptions and Troubleshooting; "
-                "Escalation; Revision/Approval placeholders; and Gaps Requiring Confirmation. "
-                "Never fabricate operating limits, approvals, safety controls or responsibilities. "
-                "Mark missing details as [Confirm with process owner]. Label the result DRAFT."
+                "Create a formal, organisation-wide, department-neutral draft SOP using only the "
+                "extracted source notes. This template must work for processes from any business "
+                "function or industry; do not make it specific to one department. Use these "
+                "sections where the source supports them: "
+                "1. Document Control (document ID, version, status, owner, approver, effective "
+                "date and review date; use placeholders when absent); "
+                "2. Purpose and Intended Outcome; "
+                "3. Scope, Boundaries and Exclusions; "
+                "4. Terms, Definitions and References; "
+                "5. Process Ownership and Roles; include a RACI-style table only where the source "
+                "identifies responsibilities, otherwise mark roles for confirmation; "
+                "6. Trigger, Inputs, Preconditions and Dependencies; "
+                "7. Systems, Tools and Resources; "
+                "8. End-to-End Procedure with numbered actions, responsible role, expected "
+                "output and decision/acceptance criteria; "
+                "9. Cross-Functional Handoffs and Communications; "
+                "10. Controls, Approvals, Risk Considerations and Quality Checks; "
+                "11. Exceptions, Rework, Incident Handling and Escalation; "
+                "12. Outputs, Records, Evidence and Retention requirements; "
+                "13. Performance Measures or Service Levels, only if defined in the source; "
+                "14. Related Documents; "
+                "15. Review, Change and Approval History; "
+                "16. Gaps Requiring Process-Owner Confirmation. "
+                "Keep the document concise but operationally useful. Distinguish source-backed "
+                "requirements from proposed placeholders. Never invent policy, legal obligations, "
+                "approval limits, role assignments, service levels, safety controls or retention "
+                "periods. For missing information write '[Confirm with process owner]'. If a "
+                "section is not applicable or not supported, say so rather than guessing. "
+                "Label the result clearly as DRAFT — NOT APPROVED FOR OPERATIONAL USE."
             )
         else:
             final_instruction = (
