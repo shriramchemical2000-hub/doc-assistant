@@ -239,6 +239,28 @@ with st.sidebar:
         st.session_state["documind_latest"] = None
         st.rerun()
     st.markdown("---")
+    st.markdown("### Gemini connection")
+    st.caption("Test the Gemini API directly, without document retrieval.")
+    if st.button("Test Gemini connection", use_container_width=True, key="test_gemini_connection"):
+        if not settings.gemini_api_key:
+            st.error("GEMINI_API_KEY is missing from Streamlit Cloud Secrets.")
+        else:
+            try:
+                with st.spinner(f"Testing {settings.gemini_model}…"):
+                    test_reply = answer_service._call_gemini(
+                        "Reply with exactly this text and nothing else: DOCUMIND_GEMINI_OK",
+                        max_output_tokens=40,
+                    )
+                if "DOCUMIND_GEMINI_OK" in test_reply:
+                    st.success(f"Gemini is working. Model: {settings.gemini_model}")
+                    st.caption(f"Test response: {test_reply}")
+                else:
+                    st.warning("Gemini returned a response, but it did not match the expected test text.")
+                    st.code(test_reply[:500])
+            except Exception as exc:
+                st.error("Gemini connection test failed.")
+                st.code(str(exc)[:700])
+
     st.markdown("### System status")
     st.caption(f"Answer engine · `{model_label}`")
     st.caption(f"Embeddings · `{settings.embedding_model.split('/')[-1]}`")
