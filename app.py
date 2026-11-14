@@ -314,7 +314,24 @@ if workspace == "Smart Docs":
                         "text": result,
                     }
             except Exception as exc:
-                st.error(f"Smart Docs could not complete the request: {str(exc)[:600]}")
+                error_message = str(exc)
+                if "Gemini API HTTP 503" in error_message:
+                    st.warning(
+                        "Gemini is temporarily overloaded. DocuMind retried the request automatically, "
+                        "but the service remained unavailable. Your document is still selected; try "
+                        "Generate again after a short pause."
+                    )
+                    with st.expander("Technical details"):
+                        st.code(error_message[:600])
+                elif "Gemini API HTTP 429" in error_message:
+                    st.warning(
+                        "The Gemini free-tier request limit may have been reached. Wait for the quota "
+                        "to reset, then try again."
+                    )
+                    with st.expander("Technical details"):
+                        st.code(error_message[:600])
+                else:
+                    st.error(f"Smart Docs could not complete the request: {error_message[:600]}")
 
     smart_result = st.session_state.get("smart_docs_result")
     if smart_result:
