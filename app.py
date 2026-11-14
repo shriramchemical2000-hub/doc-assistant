@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import re
+import html
 import uuid
 import streamlit as st
 
@@ -90,7 +92,7 @@ html, body, [class*="css"] { font-family:'DM Sans',sans-serif; }
 .stat { padding:15px 17px; min-height:88px; }
 .stat-label { color:#a8c2b2; font-size:10px; text-transform:uppercase; letter-spacing:1.1px; font-weight:700; }
 .stat-value { color:#f0fff4; font-family:'Manrope',sans-serif; font-size:25px; font-weight:800; margin-top:4px; }
-.answer-card { border-left:3px solid #8fdbb1; color:#edf7f0; }
+.answer-card { background:linear-gradient(135deg,rgba(36,83,66,.96),rgba(21,57,47,.96)); border:1px solid rgba(167,230,194,.38); border-left:5px solid #8fdbb1; border-radius:16px; padding:26px 30px; margin:10px 0 18px; box-shadow:0 14px 36px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.08); }\n.answer-text { color:#f4fff7; font-family:'Manrope',sans-serif; font-size:22px; font-weight:700; line-height:1.65; letter-spacing:-.25px; }\n@media (max-width:800px) { .answer-card { padding:20px; } .answer-text { font-size:18px; } }
 .stMarkdown, .stMarkdown p, .stMarkdown li, .stCaption, label { color:#e5f1e8; }
 .stCaption, [data-testid="stCaptionContainer"] { color:#a9bdaf !important; }
 div[data-testid="stTextArea"] textarea, div[data-testid="stTextInput"] input {
@@ -157,7 +159,7 @@ def render_sources(results):
             f"Source {index}  ·  {meta['filename']}  ·  Page {meta['page']}  ·  Match {item.score:.2f}",
             expanded=(index == 1),
         ):
-            st.caption(f"Evidence reference [S{index}]  |  Chunk {item.chunk_id}")
+            st.caption(f"Retrieved passage · Chunk {item.chunk_id}")
             st.write(item.text)
 
 try:
@@ -397,14 +399,15 @@ else:
     latest = st.session_state.get("documind_latest")
     if latest:
         st.markdown("### Answer")
-        st.markdown("<div class='answer-card'>", unsafe_allow_html=True)
-        st.write(latest["answer"].text)
-        st.markdown("</div>", unsafe_allow_html=True)
-        if latest["answer"].mode == "gemini":
-            st.caption("Answered by Gemini · based on retrieved document evidence")
-        elif latest["answer"].mode == "ollama":
-            st.caption("Answered by the local model · based on retrieved document evidence")
-        elif latest["answer"].mode == "no-evidence":
+        # Keep citation validation internally, but present a clean answer to readers.
+        # The expandable source panel below preserves document-level traceability.
+        display_answer = re.sub(r"\\s*\\[S\\d+\\]", "", latest["answer"].text, flags=re.IGNORECASE).strip()
+        display_answer = re.sub(r"\\s+([.,;:])", r"\\1", display_answer)
+        st.markdown(
+            f"<div class='answer-card'><div class='answer-text'>{html.escape(display_answer)}</div></div>",
+            unsafe_allow_html=True,
+        )
+        if latest["answer"].mode == "no-evidence":
             st.caption("No sufficiently relevant evidence was found.")
             closest = latest.get("closest_hits", [])
             if closest:
