@@ -82,8 +82,6 @@ class AnswerService:
                 reason = detail or getattr(response, "reason", "Unknown API error")
 
                 if status in _GEMINI_RETRYABLE_STATUS and attempt < len(_GEMINI_RETRY_DELAYS):
-                    # Respect a short numeric Retry-After header when supplied,
-                    # but cap it so a free demo does not appear frozen.
                     headers = getattr(response, "headers", {}) or {}
                     retry_after = headers.get("Retry-After")
                     try:
@@ -114,17 +112,36 @@ class AnswerService:
         prompt = (
             "You are DocuMind, a precise document question-answering assistant. Answer using ONLY the "
             "supplied evidence. Give the direct answer first. Every factual claim must have an inline "
-            "citation such as [S1], and cite at least one source. If the evidence does not contain the "
-            "answer, say it is not specified. Never guess.\n\n"
+            "citation using the exact token format [S1], [S2], etc. Use only source numbers present in "
+            "the supplied evidence. Do not write '(S1)', '[Source 1]' or any other citation format. "
+            "Cite at least one source. If the evidence does not contain the answer, say it is not specified. "
+            "Never guess.\n\n"
             f"QUESTION:\n{question}\n\nEVIDENCE:\n{evidence}\n\nANSWER:"
         )
         gemini_error = ""
         if self.settings.gemini_api_key:
             try:
                 generated = self._call_gemini(prompt)
-                if self._citations_valid(generated, len(hits)):
+                if not self._citations_valid(generated, len(hits)):
+                    # One constrained repair pass handles models that answer correctly
+                    # but ignore the required machine-readable citation format.
+                    repair_prompt = (
+                        "Rewrite the draft answer below using ONLY the supplied evidence. "
+                        "Preserve supported facts, remove unsupported claims, and add exact inline "
+                        "citations like [S1] or [S2] to every factual claim. Use only the source IDs "
+                        "shown in the evidence. Do not invent source IDs. Return only the corrected answer.\n\n"
+                        f"QUESTION:\n{question}\n\nEVIDENCE:\n{evidence}\n\n"
+                        f"DRAFT ANSWER:\n{generated}\n\nCORRECTED ANSWER:"
+                    )
+                    repaired = self._call_gemini(repair_prompt, max_output_tokens=1000)
+                    if self._citations_valid(repaired, len(hits)):
+                        return AnswerResult(repaired, "gemini")
+                    gemini_error = (
+                        "Gemini answered, but its response still lacked a valid [S1] citation "
+                        "after one citation-correction attempt."
+                    )
+                else:
                     return AnswerResult(generated, "gemini")
-                gemini_error = "Gemini responded, but its answer did not contain a valid source citation."
             except (requests.RequestException, ValueError, RuntimeError, KeyError, IndexError, TypeError) as exc:
                 gemini_error = str(exc)[:700]
         else:
@@ -147,5 +164,5 @@ class AnswerService:
 
     @staticmethod
     def _citations_valid(text: str, count: int) -> bool:
-        cited = [int(value) for value in re.findall(r"\[S(\d+)\]", text)]
+        cited = [int(value) for value in re.findall(r"\[S(\d+)\]", text, flags=re.IGNORECASE)]
         return bool(cited) and all(1 <= value <= count for value in cited)
