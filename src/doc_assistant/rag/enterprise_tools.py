@@ -47,10 +47,17 @@ class EnterpriseToolsService:
     def review_gaps_and_conflicts(self, documents: list[dict]) -> str:
         if not documents:
             raise ValueError("Index at least one document before running a review.")
-        evidence = "\n\n".join(
-            f"DOCUMENT: {item['filename']}\n{item['text'][:25000]}"
-            for item in documents[:12]
-        )
+        selected = documents[:12]
+        evidence_parts = []
+        for item in selected:
+            text = item["text"] or ""
+            excerpt = text[:25000]
+            if len(text) > 25000:
+                excerpt += "\n[NOTE: This document was truncated at 25,000 characters for this demo review.]"
+            evidence_parts.append(f"DOCUMENT: {item['filename']}\n{excerpt}")
+        evidence = "\n\n".join(evidence_parts)
+        if len(documents) > 12:
+            evidence += f"\n\n[NOTE: {len(documents) - 12} additional indexed documents were not included; this review covers the first 12.]"
         prompt = (
             "You are DocuMind's enterprise document consistency reviewer. Analyse the supplied "
             "documents across any department or industry. Identify only evidence-based potential "
