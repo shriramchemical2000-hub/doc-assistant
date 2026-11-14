@@ -64,6 +64,31 @@ html, body, [class*="css"] { font-family:'DM Sans',sans-serif; }
 [data-testid="stSidebar"] [data-testid="stFileUploader"] small,
 [data-testid="stSidebar"] [data-testid="stFileUploader"] span { color:#c2d8c9 !important; }
 [data-testid="stSidebar"] button { border-radius:11px; }
+
+/* Workspace navigation: icon-led selectable cards */
+[data-testid="stSidebar"] [data-testid="stRadio"] { margin-top:.35rem; }
+[data-testid="stSidebar"] [data-testid="stRadio"] div[role="radiogroup"] { gap:.42rem; }
+[data-testid="stSidebar"] [data-testid="stRadio"] div[role="radiogroup"] label {
+  display:flex; align-items:center; min-height:44px; padding:.58rem .78rem;
+  border:1px solid rgba(190,225,202,.12); border-radius:12px;
+  background:rgba(255,255,255,.035); transition:all .18s ease;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] div[role="radiogroup"] label:hover {
+  background:rgba(137,207,164,.11); border-color:rgba(167,230,194,.42);
+  transform:translateX(2px);
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
+  background:linear-gradient(105deg,rgba(83,157,117,.32),rgba(129,181,128,.13));
+  border:1px solid rgba(167,230,194,.58);
+  box-shadow:inset 3px 0 0 #9be0b5,0 5px 18px rgba(0,0,0,.14);
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] div[role="radiogroup"] label p {
+  font-weight:600; font-size:13px; letter-spacing:.05px;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p {
+  color:#f3fff6; font-weight:700;
+}
+
 .hero {
   position:relative; overflow:hidden; padding:26px 30px; border-radius:22px;
   color:#f4fff7; background:linear-gradient(115deg,rgba(19,54,45,.88),rgba(41,83,68,.74) 58%,rgba(119,126,76,.55));
@@ -185,13 +210,31 @@ with st.sidebar:
     st.markdown("## ◈ DocuMind")
     st.caption("DOCUMENT WORKSPACE")
     st.markdown("### Workspace")
+    workspace_labels = {
+        "Ask documents": "💬  Ask documents",
+        "Smart Docs": "✦  Smart Docs",
+        "Document Comparison": "⇄  Document comparison",
+        "Gap & Conflict Review": "◈  Gap & conflict review",
+        "Training Assistant": "▤  Training assistant",
+        "Document Governance": "▣  Document governance",
+    }
     workspace = st.radio(
         "Select workspace",
-        ["Ask documents", "Smart Docs", "Document Comparison", "Gap & Conflict Review", "Training Assistant", "Document Governance"],
+        list(workspace_labels),
+        format_func=lambda item: workspace_labels[item],
         index=0,
         key="documind_workspace",
         label_visibility="collapsed",
     )
+    workspace_descriptions = {
+        "Ask documents": "Search and ask questions across your indexed knowledge.",
+        "Smart Docs": "Summaries, detailed SOP drafts and plain-language explanations.",
+        "Document Comparison": "Understand what changed between two document versions.",
+        "Gap & Conflict Review": "Spot inconsistencies and items needing owner review.",
+        "Training Assistant": "Build practical learning material from source documents.",
+        "Document Governance": "Track ownership, lifecycle, version and review metadata.",
+    }
+    st.caption(workspace_descriptions[workspace])
     st.markdown("---")
     st.markdown("### Add to your knowledge base")
     uploaded_files = st.file_uploader(
