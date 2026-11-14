@@ -34,6 +34,6 @@ def get_settings() -> Settings:
         ollama_model=os.getenv("OLLAMA_MODEL", "llama3.2:3b"),
         default_top_k=int(os.getenv("DEFAULT_TOP_K", "5")),
         default_min_score=float(os.getenv("DEFAULT_MIN_SCORE", "0.18")),
-        chunk_size=int(os.getenv("CHUNK_SIZE", "900")),
-        chunk_overlap=int(os.getenv("CHUNK_OVERLAP", "150")),
+        chunk_size=int(os.getenv("CHUNK_SIZE", "220")),
+        chunk_overlap=int(os.getenv("CHUNK_OVERLAP", "40")),
     )
