@@ -401,8 +401,8 @@ else:
         st.markdown("### Answer")
         # Keep citation validation internally, but present a clean answer to readers.
         # The expandable source panel below preserves document-level traceability.
-        display_answer = re.sub(r"\\s*\\[S\\d+\\]", "", latest["answer"].text, flags=re.IGNORECASE).strip()
-        display_answer = re.sub(r"\\s+([.,;:])", r"\\1", display_answer)
+        display_answer = re.sub(r"\s*\[S\d+\]", "", latest["answer"].text, flags=re.IGNORECASE).strip()
+        display_answer = re.sub(r"\s+([.,;:])", r"\1", display_answer)
         st.markdown(
             f"<div class='answer-card'><div class='answer-text'>{html.escape(display_answer)}</div></div>",
             unsafe_allow_html=True,
