@@ -8,7 +8,8 @@ import numpy as np
 
 
 class SQLiteStore:
-    """SQLite-backed document and embedding store with cosine retrieval."""
+    """SQLite-backed document, governance metadata and embedding store."""
+
     def __init__(self, db_path: str):
         self.db_path = db_path
         parent = os.path.dirname(db_path)
@@ -19,14 +20,30 @@ class SQLiteStore:
     def _connect(self):
         connection = sqlite3.connect(self.db_path, timeout=30)
         connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA foreign_keys=ON")
         return connection
 
     def _initialize(self):
         with self._connect() as db:
             db.execute("PRAGMA journal_mode=WAL")
             db.execute("""CREATE TABLE IF NOT EXISTS documents (
-                id TEXT PRIMARY KEY, filename TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                id TEXT PRIMARY KEY, filename TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                owner TEXT DEFAULT '', status TEXT DEFAULT 'Draft',
+                version TEXT DEFAULT '1.0', review_date TEXT DEFAULT '',
+                category TEXT DEFAULT 'Unclassified'
             )""")
+            columns = {row["name"] for row in db.execute("PRAGMA table_info(documents)").fetchall()}
+            migrations = {
+                "owner": "TEXT DEFAULT ''",
+                "status": "TEXT DEFAULT 'Draft'",
+                "version": "TEXT DEFAULT '1.0'",
+                "review_date": "TEXT DEFAULT ''",
+                "category": "TEXT DEFAULT 'Unclassified'",
+            }
+            for name, definition in migrations.items():
+                if name not in columns:
+                    db.execute(f"ALTER TABLE documents ADD COLUMN {name} {definition}")
             db.execute("""CREATE TABLE IF NOT EXISTS chunks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
@@ -52,6 +69,37 @@ class SQLiteStore:
                 FROM documents d LEFT JOIN chunks c ON c.document_id=d.id
                 GROUP BY d.id ORDER BY d.created_at DESC""").fetchall()
         return [dict(row) for row in rows]
+
+    def list_document_records(self):
+        with self._connect() as db:
+            rows = db.execute("""SELECT d.id, d.filename, d.created_at, d.owner, d.status,
+                d.version, d.review_date, d.category, COUNT(c.id) AS chunks
+                FROM documents d LEFT JOIN chunks c ON c.document_id=d.id
+                GROUP BY d.id ORDER BY d.created_at DESC""").fetchall()
+        return [dict(row) for row in rows]
+
+    def update_document_metadata(self, document_id, owner, status, version, review_date, category):
+        allowed_status = {"Draft", "In Review", "Approved", "Archived"}
+        allowed_categories = {"Unclassified", "Policy", "Procedure", "Guideline", "Form", "Reference", "Other"}
+        if status not in allowed_status or category not in allowed_categories:
+            raise ValueError("Invalid document status or category.")
+        with self._connect() as db:
+            db.execute("""UPDATE documents SET owner=?, status=?, version=?, review_date=?, category=?
+                WHERE id=?""", (owner.strip(), status, version.strip(), review_date.strip(), category, document_id))
+
+    def get_document_texts(self):
+        with self._connect() as db:
+            docs = db.execute("SELECT id, filename FROM documents ORDER BY created_at DESC").fetchall()
+            result = []
+            for doc in docs:
+                rows = db.execute("SELECT text, page FROM chunks WHERE document_id=? ORDER BY page, id",
+                                  (doc["id"],)).fetchall()
+                result.append({
+                    "id": doc["id"],
+                    "filename": doc["filename"],
+                    "text": "\n\n".join(f"[Page {row['page']}] {row['text']}" for row in rows),
+                })
+        return result
 
     def count_chunks(self):
         with self._connect() as db:
