@@ -398,14 +398,17 @@ elif workspace == "Document Comparison":
             new_text = "\n\n".join(page.text for page in new_pages)
             with st.spinner("Comparing both versions and analysing the changes…"):
                 result = EnterpriseToolsService(settings).compare_documents(old_text, new_text, old_file.name, new_file.name)
-            st.session_state["enterprise_tool_result"] = {"title": "Document comparison", "text": result}
+            report_pdf = build_smart_docs_pdf(result, f"{old_file.name}_vs_{new_file.name}", "Document Comparison")
+            st.session_state["enterprise_tool_result"] = {"title": "Document comparison", "text": result, "pdf": report_pdf}
         except Exception as exc:
             st.error(f"Comparison could not be completed: {str(exc)[:600]}")
     result = st.session_state.get("enterprise_tool_result")
     if result and result.get("title") == "Document comparison":
         st.markdown("---")
         st.markdown(result["text"])
-        st.download_button("Download comparison report", result["text"].encode("utf-8"), "DocuMind_Change_Analysis.md", "text/markdown", use_container_width=True)
+        st.download_button("Download comparison report (PDF)", result["pdf"], "DocuMind_Change_Analysis.pdf", "application/pdf", use_container_width=True)
+        with st.expander("View or copy Markdown report"):
+            st.code(result["text"], language="markdown")
 
 elif workspace == "Gap & Conflict Review":
     st.markdown("<div class='section-title'>Policy Gap & Conflict Detection</div>", unsafe_allow_html=True)
@@ -419,14 +422,17 @@ elif workspace == "Gap & Conflict Review":
                 with st.spinner("Reviewing document content for potential gaps and conflicts…"):
                     review_docs = store.get_document_texts()
                     result = EnterpriseToolsService(settings).review_gaps_and_conflicts(review_docs)
-                st.session_state["enterprise_tool_result"] = {"title": "gap review", "text": result}
+                report_pdf = build_smart_docs_pdf(result, "Indexed_Enterprise_Documents", "Gap and Conflict Review")
+                st.session_state["enterprise_tool_result"] = {"title": "gap review", "text": result, "pdf": report_pdf}
             except Exception as exc:
                 st.error(f"Review could not be completed: {str(exc)[:600]}")
     result = st.session_state.get("enterprise_tool_result")
     if result and result.get("title") == "gap review":
         st.markdown("---")
         st.markdown(result["text"])
-        st.download_button("Download review report", result["text"].encode("utf-8"), "DocuMind_Gap_Conflict_Review.md", "text/markdown", use_container_width=True)
+        st.download_button("Download review report (PDF)", result["pdf"], "DocuMind_Gap_Conflict_Review.pdf", "application/pdf", use_container_width=True)
+        with st.expander("View or copy Markdown report"):
+            st.code(result["text"], language="markdown")
     st.caption("This is an AI-assisted document review, not a legal, regulatory, safety or compliance determination.")
 
 elif workspace == "Training Assistant":
@@ -443,14 +449,17 @@ elif workspace == "Training Assistant":
                 result = EnterpriseToolsService(settings).create_training_material(
                     training_text, training_file.name, training_format, training_audience
                 )
-            st.session_state["enterprise_tool_result"] = {"title": "training", "text": result}
+            report_pdf = build_smart_docs_pdf(result, training_file.name, "Training Material")
+            st.session_state["enterprise_tool_result"] = {"title": "training", "text": result, "pdf": report_pdf}
         except Exception as exc:
             st.error(f"Training material could not be created: {str(exc)[:600]}")
     result = st.session_state.get("enterprise_tool_result")
     if result and result.get("title") == "training":
         st.markdown("---")
         st.markdown(result["text"])
-        st.download_button("Download training material", result["text"].encode("utf-8"), "DocuMind_Training_Material.md", "text/markdown", use_container_width=True)
+        st.download_button("Download training material (PDF)", result["pdf"], "DocuMind_Training_Material.pdf", "application/pdf", use_container_width=True)
+        with st.expander("View or copy Markdown material"):
+            st.code(result["text"], language="markdown")
 
 elif workspace == "Document Governance":
     st.markdown("<div class='section-title'>Document Governance</div>", unsafe_allow_html=True)
