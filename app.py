@@ -284,7 +284,7 @@ for col, label, value in [
 if workspace == "Smart Docs":
     st.markdown("<div class='section-title'>Smart Docs</div>", unsafe_allow_html=True)
     st.markdown(
-        "<div class='subtle'>Summarise lengthy documents, create structured SOPs, or explain existing procedures in plain language.</div>",
+        "<div class='subtle'>Summarise documents, create organisation-wide SOPs, and explain procedures across any department or business function.</div>",
         unsafe_allow_html=True,
     )
     smart_task = st.radio(
@@ -295,7 +295,7 @@ if workspace == "Smart Docs":
     )
     descriptions = {
         "Summarise document": "Generate an executive summary, section-by-section breakdown, and key takeaways.",
-        "Create an SOP": "Draft a structured SOP with purpose, responsibilities, inputs, ordered steps, decision points, records, and escalation paths.",
+        "Create an SOP": "Create a department-neutral SOP with process ownership, cross-functional hand-offs, controls, approvals, exceptions, records, and governance placeholders.",
         "Explain an existing SOP": "Explain the procedure in plain language, including roles, checks, sequence, and cautions.",
     }
     st.info(descriptions[smart_task])
@@ -309,7 +309,7 @@ if workspace == "Smart Docs":
     )
     smart_context = st.text_area(
         "Additional instructions (optional)",
-        placeholder="Example: Focus on operating limits, maintenance responsibilities, safety checks and escalation criteria.",
+        placeholder="Example: Focus on process ownership, cross-functional hand-offs, approval controls, exception handling and required records.",
         height=85,
         key="smart_docs_context",
     )
