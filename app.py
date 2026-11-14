@@ -15,6 +15,7 @@ from src.doc_assistant.rag.embeddings import SentenceTransformerEmbedder
 from src.doc_assistant.rag.retriever import Retriever
 from src.doc_assistant.storage.sqlite_store import SQLiteStore
 from src.doc_assistant.export.pdf_report import build_smart_docs_pdf
+from src.doc_assistant.rag.enterprise_tools import EnterpriseToolsService
 
 st.set_page_config(
     page_title="DocuMind | Document Intelligence",
@@ -186,7 +187,7 @@ with st.sidebar:
     st.markdown("### Workspace")
     workspace = st.radio(
         "Select workspace",
-        ["Ask documents", "Smart Docs"],
+        ["Ask documents", "Smart Docs", "Document Comparison", "Gap & Conflict Review", "Training Assistant", "Document Governance"],
         index=0,
         key="documind_workspace",
         label_visibility="collapsed",
@@ -384,6 +385,104 @@ if workspace == "Smart Docs":
         )
         with st.expander("View generated Markdown"):
             st.markdown(smart_result["text"])
+elif workspace == "Document Comparison":
+    st.markdown("<div class='section-title'>Document Comparison & Change Intelligence</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subtle'>Compare two versions of any business document and review substantive changes before approving or publishing an update.</div>", unsafe_allow_html=True)
+    old_file = st.file_uploader("Upload the earlier version", type=["pdf", "docx", "txt"], key="compare_old")
+    new_file = st.file_uploader("Upload the newer version", type=["pdf", "docx", "txt"], key="compare_new")
+    if st.button("Compare document versions →", type="primary", use_container_width=True, disabled=not (old_file and new_file)):
+        try:
+            old_pages = load_uploaded_file(old_file.name, old_file.getvalue())
+            new_pages = load_uploaded_file(new_file.name, new_file.getvalue())
+            old_text = "\n\n".join(page.text for page in old_pages)
+            new_text = "\n\n".join(page.text for page in new_pages)
+            with st.spinner("Comparing both versions and analysing the changes…"):
+                result = EnterpriseToolsService(settings).compare_documents(old_text, new_text, old_file.name, new_file.name)
+            st.session_state["enterprise_tool_result"] = {"title": "Document comparison", "text": result}
+        except Exception as exc:
+            st.error(f"Comparison could not be completed: {str(exc)[:600]}")
+    result = st.session_state.get("enterprise_tool_result")
+    if result and result.get("title") == "Document comparison":
+        st.markdown("---")
+        st.markdown(result["text"])
+        st.download_button("Download comparison report", result["text"].encode("utf-8"), "DocuMind_Change_Analysis.md", "text/markdown", use_container_width=True)
+
+elif workspace == "Gap & Conflict Review":
+    st.markdown("<div class='section-title'>Policy Gap & Conflict Detection</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subtle'>Review indexed documents for inconsistent statements, unclear ownership, missing process details and potential control gaps. Findings require human validation.</div>", unsafe_allow_html=True)
+    if not docs:
+        st.info("Index two or more related documents for the most useful cross-document review.")
+    else:
+        st.caption(f"Available documents: {len(docs)}")
+        if st.button("Analyse indexed documents →", type="primary", use_container_width=True):
+            try:
+                with st.spinner("Reviewing document content for potential gaps and conflicts…"):
+                    review_docs = store.get_document_texts()
+                    result = EnterpriseToolsService(settings).review_gaps_and_conflicts(review_docs)
+                st.session_state["enterprise_tool_result"] = {"title": "gap review", "text": result}
+            except Exception as exc:
+                st.error(f"Review could not be completed: {str(exc)[:600]}")
+    result = st.session_state.get("enterprise_tool_result")
+    if result and result.get("title") == "gap review":
+        st.markdown("---")
+        st.markdown(result["text"])
+        st.download_button("Download review report", result["text"].encode("utf-8"), "DocuMind_Gap_Conflict_Review.md", "text/markdown", use_container_width=True)
+    st.caption("This is an AI-assisted document review, not a legal, regulatory, safety or compliance determination.")
+
+elif workspace == "Training Assistant":
+    st.markdown("<div class='section-title'>Enterprise Training Assistant</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subtle'>Turn approved or reference documents into practical learning material for employees across any business function.</div>", unsafe_allow_html=True)
+    training_file = st.file_uploader("Upload a source document", type=["pdf", "docx", "txt"], key="training_source")
+    training_format = st.selectbox("Training output", ["Training guide", "FAQ", "Knowledge quiz", "Quick-reference checklist"])
+    training_audience = st.text_input("Target audience (optional)", placeholder="e.g. New employees, team leads, process owners")
+    if st.button("Create training material →", type="primary", use_container_width=True, disabled=not training_file):
+        try:
+            pages = load_uploaded_file(training_file.name, training_file.getvalue())
+            training_text = "\n\n".join(page.text for page in pages)
+            with st.spinner("Creating source-grounded training material…"):
+                result = EnterpriseToolsService(settings).create_training_material(
+                    training_text, training_file.name, training_format, training_audience
+                )
+            st.session_state["enterprise_tool_result"] = {"title": "training", "text": result}
+        except Exception as exc:
+            st.error(f"Training material could not be created: {str(exc)[:600]}")
+    result = st.session_state.get("enterprise_tool_result")
+    if result and result.get("title") == "training":
+        st.markdown("---")
+        st.markdown(result["text"])
+        st.download_button("Download training material", result["text"].encode("utf-8"), "DocuMind_Training_Material.md", "text/markdown", use_container_width=True)
+
+elif workspace == "Document Governance":
+    st.markdown("<div class='section-title'>Document Governance</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subtle'>Maintain lightweight document register metadata for ownership, status, version, classification and review date.</div>", unsafe_allow_html=True)
+    records = store.list_document_records()
+    if not records:
+        st.info("Index documents first. Each indexed document will appear in this register.")
+    else:
+        st.caption(f"{len(records)} document(s) in the current browser session")
+        for record in records:
+            with st.expander(f"{record['filename']}  ·  {record['status']}  ·  v{record['version']}"):
+                col1, col2 = st.columns(2)
+                owner = col1.text_input("Document owner", value=record["owner"] or "", key=f"gov_owner_{record['id']}")
+                statuses = ["Draft", "In Review", "Approved", "Archived"]
+                current_status = record["status"] if record["status"] in statuses else "Draft"
+                status = col2.selectbox("Lifecycle status", statuses, index=statuses.index(current_status), key=f"gov_status_{record['id']}")
+                col3, col4 = st.columns(2)
+                version = col3.text_input("Version", value=record["version"] or "1.0", key=f"gov_version_{record['id']}")
+                review_date = col4.text_input("Next review date", value=record["review_date"] or "", placeholder="YYYY-MM-DD", key=f"gov_review_{record['id']}")
+                categories = ["Unclassified", "Policy", "Procedure", "Guideline", "Form", "Reference", "Other"]
+                current_category = record["category"] if record["category"] in categories else "Other"
+                category = st.selectbox("Document category", categories, index=categories.index(current_category), key=f"gov_category_{record['id']}")
+                st.caption(f"Indexed {record['chunks']} passages · Added {record['created_at']}")
+                if st.button("Save document metadata", key=f"gov_save_{record['id']}", type="primary"):
+                    try:
+                        store.update_document_metadata(record["id"], owner, status, version, review_date, category)
+                        st.success("Document register updated.")
+                        st.rerun()
+                    except Exception as exc:
+                        st.error(f"Could not save metadata: {str(exc)[:300]}")
+    st.caption("Governance metadata is stored in the current session database. Formal approval workflows, access control and audit trails are not part of this portfolio MVP.")
+
 else:
     st.markdown("<div class='section-title'>Ask your documents</div>", unsafe_allow_html=True)
     st.markdown("<div class='subtle'>Ask a question and get an answer grounded in your indexed documents.</div>", unsafe_allow_html=True)
