@@ -4,7 +4,7 @@
 
 **Live demo:** Not deployed yet. The public browser link will be added here after deployment and end-to-end testing.
 
-DocuMind is a Retrieval-Augmented Generation (RAG) application for exploring PDF, DOCX and TXT documents using natural-language questions. It retrieves relevant passages before generating an answer and displays the source evidence so users can verify the response.
+DocuMind is a department-neutral enterprise document intelligence portfolio application. It combines retrieval-augmented question answering with document generation, version comparison, consistency review, training-content generation and a lightweight document governance register. It is designed to demonstrate practical document workflows across business functions, not to enforce a particular industry's policies.
 
 ## Try the intended experience
 
@@ -17,18 +17,17 @@ DocuMind is a Retrieval-Augmented Generation (RAG) application for exploring PDF
 
 ## Highlights
 
-- PDF, DOCX and TXT ingestion
-- 20 MB per-file upload limit
-- Text chunking with page and filename metadata
-- Semantic embeddings using Sentence Transformers
-- Similarity-based retrieval of relevant passages
-- Gemini API answer generation using retrieved evidence
-- Citation validation and evidence-only fallback
-- Expandable source passages for answer verification
-- Single-question Q&A that replaces the previous answer with the latest result
-- Dedicated **Smart Docs** page in the sidebar for summaries, SOP drafting and SOP explanation
-- Smart Docs workspace in the sidebar: long-document summaries, structured SOP drafting and plain-language SOP explanation
-- Streamlit browser interface
+- PDF, DOCX and TXT ingestion with page and filename metadata
+- Hybrid retrieval combining semantic similarity and lexical keyword coverage
+- Gemini-powered document Q&A with citation validation and evidence-only fallback
+- Traceable source passages for answer verification
+- Smart Docs: long-document summaries, department-neutral SOP drafting, and plain-language SOP explanation
+- Document Comparison: before/after analysis of two document versions, including role, approval, control and process changes
+- Gap & Conflict Review: evidence-led cross-document inconsistency and missing-information review, with human-validation caveats
+- Training Assistant: source-grounded training guides, FAQs, quizzes and quick-reference checklists
+- Document Governance register: document owner, lifecycle status, version, review date and category
+- Downloadable Markdown reports for comparison, review and training workflows; PDF export for Smart Docs
+- Browser-based Streamlit interface with per-session demo workspaces
 - Optional Ollama mode for local/Docker deployments
 
 ## How it works
@@ -71,7 +70,7 @@ The Gemini key is stored in Streamlit's server-side Secrets settings. It is neve
 
 ## Product preview
 
-The application provides two workspaces selected directly in the left sidebar: **Ask documents** for cited Q&A and **Smart Docs** for document summaries, SOP drafting and plain-language SOP explanation. Screenshots will be added after the hosted app has been run and captured.
+The application provides six workspaces selected directly in the left sidebar: **Ask documents**, **Smart Docs**, **Document Comparison**, **Gap & Conflict Review**, **Training Assistant** and **Document Governance**. The public demo uses fictional or public documents only.
 
 ## Responsible demo use and limitations
 
