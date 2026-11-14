@@ -1,0 +1,35 @@
+ENTERPRISE PROCESS CHANGE PROCEDURE
+Version: 1.0
+Status: Approved (fictional demo document)
+Document owner: Enterprise Process Governance
+Effective date: 1 February 2026
+
+1. Purpose
+Describe how business process changes are requested, assessed, approved, communicated and recorded.
+
+2. Scope
+Applies to changes to documented business processes, supporting systems, responsibilities and operational controls across all business functions.
+
+3. Roles
+Requestor: Describes the proposed change and expected outcome.
+Process Owner: Assesses process impact and confirms process accuracy.
+Change Reviewer: Reviews dependencies, risks and affected stakeholders.
+Document Coordinator: Updates the controlled document register.
+Approver: Authorises the change.
+
+4. Procedure
+Step 1 — The Requestor records the reason, expected benefit, affected documents and proposed implementation date.
+Step 2 — The Process Owner reviews the request and identifies affected teams, systems, records and process hand-offs.
+Step 3 — The Change Reviewer checks dependencies and potential impacts.
+Step 4 — The Process Owner may approve and publish a process change once the Change Reviewer has completed the review.
+Step 5 — The Document Coordinator updates the document version and register.
+Step 6 — The Requestor communicates the change to affected stakeholders.
+
+5. Records
+Retain the change request, impact review, approval evidence, updated document and communication record.
+
+6. Exceptions
+If the change cannot be completed as planned, the Process Owner records the reason and agrees the next action with affected stakeholders.
+
+7. Review
+Review this procedure every 12 months or after a material process change.
