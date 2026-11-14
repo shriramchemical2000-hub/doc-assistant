@@ -1,0 +1,38 @@
+ENTERPRISE DOCUMENT CONTROL STANDARD
+Version: 2.0
+Status: Draft for review (fictional demo document)
+Document owner: Enterprise Process Governance
+Proposed effective date: 1 July 2026
+Review cycle: 18 months
+
+1. Purpose
+This standard defines a consistent approach for creating, reviewing, approving, publishing and maintaining controlled business documents across the organisation.
+
+2. Scope
+Applies to policies, procedures, standards, guidelines, forms and controlled reference documents used by business functions. It does not replace specialist legal, safety, security or regulatory requirements.
+
+3. Roles
+Document Owner: Maintains accuracy, coordinates review and proposes updates.
+Process Owner: Confirms that process steps and responsibilities are accurate.
+Reviewer: Checks clarity, consistency and impacts on connected processes.
+Risk Reviewer: Reviews material changes that affect enterprise controls or risk exposure.
+Approver: Authorises publication according to the approval rules below.
+Document Coordinator: Maintains the central register and published copy.
+
+4. Approval
+A controlled document may be published after approval by its Document Owner and Process Owner. Material changes that affect enterprise controls or risk exposure also require Risk Reviewer sign-off before publication. The Document Coordinator verifies that the version, owner, approval date and review date are recorded before publication.
+
+5. Versioning and review
+Use a major version for material changes to responsibilities, controls or process outcomes. Use a minor version for editorial or clarification changes. Review every controlled document at least once every 18 months.
+
+6. Records
+Retain the approved source file, review comments, approval evidence and publication date in the designated document repository. The retention period is determined by the applicable records schedule.
+
+7. Exceptions
+Urgent changes may be issued through an expedited review, but the Document Owner must record the reason and obtain the required approvals before publication.
+
+8. Related documents
+Enterprise Process Change Procedure; Records Management Schedule.
+
+CHANGE NOTE
+Compared with version 1.0, this draft introduces a Risk Reviewer for material control/risk changes and changes the review cycle from 12 months to 18 months. It is not approved for operational use.
