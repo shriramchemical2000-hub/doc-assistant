@@ -345,12 +345,14 @@ else:
             st.session_state["documind_latest"] = None
         else:
             with st.spinner("Finding evidence and generating your answer…"):
-                hits = retriever.search(question.strip(), top_k=settings.default_top_k)
-                hits = [hit for hit in hits if hit.score >= settings.default_min_score]
+                closest_hits = retriever.search(question.strip(), top_k=settings.default_top_k)
+                hits = [hit for hit in closest_hits if hit.score >= settings.default_min_score]
                 answer = answer_service.answer(question.strip(), hits)
             st.session_state["documind_latest"] = {
                 "answer": answer,
                 "hits": hits,
+                "closest_hits": closest_hits[:3],
+                "minimum_score": settings.default_min_score,
             }
 
     latest = st.session_state.get("documind_latest")
@@ -365,6 +367,17 @@ else:
             st.caption("Answered by the local model · based on retrieved document evidence")
         elif latest["answer"].mode == "no-evidence":
             st.caption("No sufficiently relevant evidence was found.")
+            closest = latest.get("closest_hits", [])
+            if closest:
+                best = closest[0]
+                minimum = latest.get("minimum_score", settings.default_min_score)
+                st.warning(
+                    f"The closest passage scored {best.score:.3f}; the configured minimum is "
+                    f"{minimum:.3f}. The passage was not sent to Gemini because it did not meet "
+                    "the relevance cutoff."
+                )
+                with st.expander("Inspect closest passages (below relevance cutoff)"):
+                    render_sources(closest)
         else:
             st.caption("AI generation did not complete. Retrieved evidence is shown above.")
             if latest["answer"].error:
